@@ -17,6 +17,7 @@
     "cors": "^2.8.5",
     "express": "^5.0.0",
     "openai": "^4.77.0",
+    "proto-agent-tools": "workspace:*",
     "ws": "^8.18.0",
     "zod": "^4.0.0",
     "zod-to-json-schema": "^3.24.5"
