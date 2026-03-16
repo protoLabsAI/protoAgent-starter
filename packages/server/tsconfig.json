@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2022"],
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "skipLibCheck": true,
+    "outDir": "dist",
+    "rootDir": "src",
+    "paths": {
+      "proto-agent-tools": ["../tools/dist/index.d.ts"],
+      "proto-agent-tools/adapters/mcp": ["../tools/dist/adapters/mcp-adapter.d.ts"],
+      "proto-agent-tools/adapters/express": ["../tools/dist/adapters/express-adapter.d.ts"],
+      "proto-agent-tools/adapters/langchain": ["../tools/dist/adapters/langchain-adapter.d.ts"]
+    }
+  },
+  "include": ["src"],
+  "references": [{ "path": "../tools" }]
+}
