@@ -6,11 +6,12 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "npm run dev --workspace=packages/server & npm run dev --workspace=packages/app",
-    "build": "npm run build --workspaces --if-present",
-    "typecheck": "npm run typecheck --workspaces --if-present"
+    "dev": "pnpm -r --parallel --filter \"./packages/server\" --filter \"./packages/app\" run dev",
+    "build": "pnpm -r --if-present run build",
+    "typecheck": "pnpm -r --if-present run typecheck"
   },
   "engines": {
     "node": ">=20"
-  }
+  },
+  "packageManager": "pnpm@10.18.2"
 }
