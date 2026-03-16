@@ -192,6 +192,7 @@ function extractCitations(parts: Array<Record<string, unknown>>): Citation[] {
   return [];
 }
 
+
 function extractGroupText(group: PartSegment[]): string {
   return group
     .filter(
