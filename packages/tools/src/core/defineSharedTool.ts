@@ -33,7 +33,7 @@ export function defineSharedTool<
   TInputSchema extends z.ZodTypeAny,
   TOutputSchema extends z.ZodTypeAny,
 >(
-  definition: ToolDefinition<z.infer<TInputSchema>, z.infer<TOutputSchema>>
+  definition: ToolDefinition<z.infer<TInputSchema>, z.infer<TOutputSchema>>,
 ): SharedTool<z.infer<TInputSchema>, z.infer<TOutputSchema>> {
   return {
     name: definition.name,
@@ -42,7 +42,7 @@ export function defineSharedTool<
     outputSchema: definition.outputSchema as z.ZodType<z.infer<TOutputSchema>>,
     execute: async (
       input: z.infer<TInputSchema>,
-      context: ToolContext
+      context: ToolContext,
     ): Promise<ToolResult<z.infer<TOutputSchema>>> => {
       try {
         // Validate input against schema

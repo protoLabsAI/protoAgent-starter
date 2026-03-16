@@ -183,7 +183,7 @@ export const searchDocsTool = defineSharedTool({
         title: z.string(),
         url: z.string(),
         snippet: z.string(),
-      })
+      }),
     ),
   }),
   execute: async (input) => {

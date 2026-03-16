@@ -102,7 +102,7 @@ export function ConfirmationCard({
         data-state="denied"
         className={cn(
           'my-1 flex max-w-full items-center gap-2 overflow-hidden rounded-md border border-border/50 bg-muted/30 px-3 py-2.5 text-xs text-muted-foreground',
-          className
+          className,
         )}
       >
         <ShieldX className="size-3.5 shrink-0" />
@@ -121,7 +121,7 @@ export function ConfirmationCard({
         data-state="responded"
         className={cn(
           'my-1 flex max-w-full items-center gap-2 overflow-hidden rounded-md border border-yellow-500/30 bg-yellow-500/5 px-3 py-2.5 text-xs',
-          className
+          className,
         )}
       >
         <Loader2 className="size-3.5 shrink-0 animate-spin text-yellow-500" />
@@ -139,7 +139,7 @@ export function ConfirmationCard({
       data-state="approval-requested"
       className={cn(
         'my-1 max-w-full overflow-hidden rounded-md border border-yellow-500/40 bg-yellow-500/5 text-xs',
-        className
+        className,
       )}
     >
       {/* Header */}

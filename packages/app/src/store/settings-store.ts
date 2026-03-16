@@ -34,6 +34,6 @@ export const useSettingsStore = create<SettingsState & SettingsActions>()(
         defaultModel: state.defaultModel,
         theme: state.theme,
       }),
-    }
-  )
+    },
+  ),
 );

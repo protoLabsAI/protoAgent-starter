@@ -81,7 +81,7 @@ export function CheckpointMarker({ checkpoint, onRewind, className }: Checkpoint
             'flex items-center gap-1 rounded px-1.5 py-0.5',
             'bg-amber-500/15 text-amber-600 dark:text-amber-400',
             'hover:bg-amber-500/25 transition-colors',
-            'disabled:opacity-50 disabled:cursor-not-allowed'
+            'disabled:opacity-50 disabled:cursor-not-allowed',
           )}
           aria-label="Rewind to this checkpoint"
         >

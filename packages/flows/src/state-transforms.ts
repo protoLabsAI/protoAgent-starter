@@ -146,7 +146,7 @@ export type FieldMapping<TParent, TChild> = {
  * ```
  */
 export function createFieldMapper<TParent extends object, TChild extends object>(
-  mapping: FieldMapping<TParent, TChild>
+  mapping: FieldMapping<TParent, TChild>,
 ): StateTransformer<TParent, TChild> {
   return {
     toInput: (parent: TParent): TChild => {

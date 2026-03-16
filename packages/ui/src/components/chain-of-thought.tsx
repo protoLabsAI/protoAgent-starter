@@ -104,14 +104,14 @@ export function ChainOfThought({ text, state, className }: ChainOfThoughtProps) 
         <Brain
           className={cn(
             'size-3.5 shrink-0 text-muted-foreground',
-            isStreaming && 'animate-pulse text-primary'
+            isStreaming && 'animate-pulse text-primary',
           )}
         />
         <span className="flex-1 truncate text-muted-foreground">{summaryText}</span>
         <ChevronDown
           className={cn(
             'size-3 shrink-0 text-muted-foreground transition-transform',
-            isOpen && 'rotate-180'
+            isOpen && 'rotate-180',
           )}
         />
       </button>
@@ -137,7 +137,7 @@ export function ChainOfThought({ text, state, className }: ChainOfThoughtProps) 
                   <span
                     className={cn(
                       'leading-relaxed',
-                      isCurrentStep ? 'text-foreground/90' : 'text-foreground/70'
+                      isCurrentStep ? 'text-foreground/90' : 'text-foreground/70',
                     )}
                   >
                     {step}

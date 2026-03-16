@@ -31,7 +31,7 @@ function unescapeHtmlEntities(text: string): string {
 export function extractTag(output: string, tag: string): string | undefined {
   if (!/^[a-zA-Z0-9_-]+$/.test(tag)) {
     throw new Error(
-      `Invalid tag name: ${tag}. Must contain only alphanumerics, hyphens, and underscores`
+      `Invalid tag name: ${tag}. Must contain only alphanumerics, hyphens, and underscores`,
     );
   }
 
@@ -71,7 +71,7 @@ export function extractOptionalTag(output: string, tag: string, defaultValue: st
 export function extractAllTags(output: string, tag: string): string[] {
   if (!/^[a-zA-Z0-9_-]+$/.test(tag)) {
     throw new Error(
-      `Invalid tag name: ${tag}. Must contain only alphanumerics, hyphens, and underscores`
+      `Invalid tag name: ${tag}. Must contain only alphanumerics, hyphens, and underscores`,
     );
   }
 
@@ -99,7 +99,7 @@ export function extractTaggedJSON<T>(output: string, tag: string): T {
     return JSON.parse(content) as T;
   } catch (error) {
     throw new Error(
-      `Failed to parse JSON from <${tag}> tag: ${error instanceof Error ? error.message : String(error)}`
+      `Failed to parse JSON from <${tag}> tag: ${error instanceof Error ? error.message : String(error)}`,
     );
   }
 }
@@ -159,7 +159,7 @@ export function isXML(content: string): boolean {
 export function extractRequiredEnum<T extends string>(
   output: string,
   tag: string,
-  validValues: readonly T[]
+  validValues: readonly T[],
 ): T {
   const content = extractRequiredTag(output, tag);
   const contentLower = content.toLowerCase();
@@ -167,7 +167,7 @@ export function extractRequiredEnum<T extends string>(
 
   if (matchIndex === -1) {
     throw new Error(
-      `Tag <${tag}> has invalid value "${content}". Must be one of: ${validValues.join(', ')}`
+      `Tag <${tag}> has invalid value "${content}". Must be one of: ${validValues.join(', ')}`,
     );
   }
 
@@ -180,7 +180,7 @@ export function extractRequiredEnum<T extends string>(
 export function extractOptionalEnum<T extends string>(
   output: string,
   tag: string,
-  validValues: readonly T[]
+  validValues: readonly T[],
 ): T | undefined {
   const content = extractTag(output, tag);
   if (content === undefined) return undefined;

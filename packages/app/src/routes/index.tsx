@@ -63,17 +63,10 @@ function ChatPage() {
   const selectedRole = roles.find((r) => r.id === selectedRoleId);
 
   // ── Chat state (production Ava pattern) ─────────────────────────────────
-  const {
-    messages,
-    sendMessage,
-    stop,
-    isStreaming,
-    modelAlias,
-    handleNewChat,
-    handleModelChange,
-  } = useChatSession({
-    system: selectedRole?.systemPrompt,
-  });
+  const { messages, sendMessage, stop, isStreaming, modelAlias, handleNewChat, handleModelChange } =
+    useChatSession({
+      system: selectedRole?.systemPrompt,
+    });
 
   // ── Tool progress from WebSocket sideband ─────────────────────────────────
   const { getProgressByToolName } = useToolProgress();
@@ -96,7 +89,7 @@ function ChatPage() {
       const toolName = toolCallIdToName.get(toolCallId);
       return toolName ? getProgressByToolName(toolName) : undefined;
     },
-    [toolCallIdToName, getProgressByToolName]
+    [toolCallIdToName, getProgressByToolName],
   );
 
   // ── Handlers ──────────────────────────────────────────────────────────────
@@ -105,25 +98,24 @@ function ChatPage() {
       if (isStreaming) return;
       void sendMessage({ text });
     },
-    [isStreaming, sendMessage]
+    [isStreaming, sendMessage],
   );
 
   const handleToolApprove = useCallback(
     (approvalId: string) => {
       void sendMessage({ text: `Approved tool call ${approvalId}` });
     },
-    [sendMessage]
+    [sendMessage],
   );
 
   const handleToolReject = useCallback(
     (approvalId: string) => {
       void sendMessage({ text: `Rejected tool call ${approvalId}` });
     },
-    [sendMessage]
+    [sendMessage],
   );
 
-  const currentModelLabel =
-    MODEL_OPTIONS.find((m) => m.alias === modelAlias)?.label ?? modelAlias;
+  const currentModelLabel = MODEL_OPTIONS.find((m) => m.alias === modelAlias)?.label ?? modelAlias;
 
   // ─────────────────────────────────────────────────────────────────────────
 

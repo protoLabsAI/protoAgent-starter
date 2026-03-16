@@ -47,7 +47,7 @@ export function useChatSession({
           ...(system ? { system } : {}),
         },
       }),
-    [apiUrl, modelAlias, system]
+    [apiUrl, modelAlias, system],
   );
 
   const { messages, sendMessage, stop, status, setMessages, error } = useChat({

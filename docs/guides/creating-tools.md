@@ -34,7 +34,7 @@ export const searchDocsTool = defineSharedTool({
         title: z.string(),
         excerpt: z.string(),
         url: z.string(),
-      })
+      }),
     ),
   }),
   execute: async (input, context) => {
@@ -77,7 +77,7 @@ inputSchema: z.object({
   format: z
     .enum(['json', 'markdown', 'plain'])
     .describe(
-      'Output format. Use "json" for programmatic use, "markdown" for display, "plain" for simple text'
+      'Output format. Use "json" for programmatic use, "markdown" for display, "plain" for simple text',
     ),
 
   // Avoid: vague description
@@ -120,7 +120,7 @@ export const deleteRecordTool = Object.assign(
       return { success: true, data: { deleted: true } };
     },
   }),
-  { requiresConfirmation: true }
+  { requiresConfirmation: true },
 );
 ```
 

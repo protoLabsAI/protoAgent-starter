@@ -141,7 +141,7 @@ export function SlashCommandDropdown({ slashCommands, className }: SlashCommandD
           break;
       }
     },
-    [commands, selectedIndex, onSelect, onClose, onNavigate]
+    [commands, selectedIndex, onSelect, onClose, onNavigate],
   );
 
   useEffect(() => {
@@ -160,7 +160,7 @@ export function SlashCommandDropdown({ slashCommands, className }: SlashCommandD
           'absolute bottom-full left-0 right-0 z-50 mb-1',
           'rounded-lg border border-border bg-popover shadow-lg',
           'p-2',
-          className
+          className,
         )}
       >
         <p className="px-2 py-1 text-xs text-muted-foreground">No matching commands</p>
@@ -179,7 +179,7 @@ export function SlashCommandDropdown({ slashCommands, className }: SlashCommandD
         'max-h-64 overflow-y-auto',
         'rounded-lg border border-border bg-popover shadow-lg',
         'p-1',
-        className
+        className,
       )}
     >
       {groups.map((group) => (
@@ -203,7 +203,7 @@ export function SlashCommandDropdown({ slashCommands, className }: SlashCommandD
                   'flex w-full items-start gap-2 rounded px-2 py-1.5 text-left text-sm transition-colors',
                   isSelected
                     ? 'bg-accent text-accent-foreground'
-                    : 'text-foreground hover:bg-accent/50'
+                    : 'text-foreground hover:bg-accent/50',
                 )}
               >
                 <div className="min-w-0 flex-1">

@@ -92,7 +92,7 @@ export function buildChatGraphLinear() {
       { name: 'preprocess', fn: preprocessNode },
       { name: 'generate', fn: generateResponseNode },
       { name: 'postprocess', fn: postprocessNode },
-    ]
+    ],
   );
 }
 

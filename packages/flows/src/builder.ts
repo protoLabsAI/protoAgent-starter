@@ -131,7 +131,7 @@ export class GraphBuilder<TState> {
   addConditionalEdge(
     from: NodeName,
     condition: ConditionalEdgeFunction<TState>,
-    pathMap?: Record<string, NodeName>
+    pathMap?: Record<string, NodeName>,
   ): this {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     this.graph.addConditionalEdges(from as any, condition as any, pathMap as any);
@@ -180,7 +180,7 @@ export class GraphBuilder<TState> {
  */
 export function createLinearGraph<TState>(
   config: GraphBuilderConfig<TState>,
-  nodes: Array<{ name: string; fn: NodeFunction<TState> }>
+  nodes: Array<{ name: string; fn: NodeFunction<TState> }>,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): any {
   const builder = new GraphBuilder(config);
@@ -213,7 +213,7 @@ export function createLoopGraph<TState>(
     nodeName: string;
     nodeFunction: NodeFunction<TState>;
     shouldContinue: (state: TState) => boolean;
-  }
+  },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): any {
   const builder = new GraphBuilder(config);
@@ -238,7 +238,7 @@ export function createBranchingGraph<TState>(
     branches: Array<{ name: string; fn: NodeFunction<TState> }>;
     router: ConditionalEdgeFunction<TState>;
     exitNode?: { name: string; fn: NodeFunction<TState> };
-  }
+  },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): any {
   const builder = new GraphBuilder(config);
@@ -280,7 +280,7 @@ export function createBranchingGraph<TState>(
  */
 export function createToolNode<TState>(
   name: string,
-  _tools: unknown[]
+  _tools: unknown[],
 ): { name: string; fn: NodeFunction<TState> } {
   return {
     name,

@@ -86,7 +86,7 @@ function QueueItemRow({ item }: { item: QueueItem }) {
         <span
           className={cn(
             'shrink-0 rounded border border-current px-1 font-mono text-[9px]',
-            complexityCfg.color
+            complexityCfg.color,
           )}
           title={`Complexity: ${item.complexity}`}
         >

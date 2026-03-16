@@ -86,7 +86,7 @@ function PlanStepRow({ step }: { step: PlanStep }) {
             step.status === 'done' && 'text-muted-foreground line-through',
             step.status === 'error' && 'text-destructive',
             step.status === 'running' && 'font-medium text-foreground',
-            step.status === 'pending' && 'text-foreground/80'
+            step.status === 'pending' && 'text-foreground/80',
           )}
         >
           {step.title}
@@ -102,7 +102,7 @@ function PlanStepRow({ step }: { step: PlanStep }) {
             <ChevronDown
               className={cn(
                 'size-3 text-muted-foreground transition-transform',
-                detailOpen && 'rotate-180'
+                detailOpen && 'rotate-180',
               )}
             />
           </button>
@@ -160,7 +160,7 @@ export function PlanPart({ plan, className }: PlanPartProps) {
         <ChevronDown
           className={cn(
             'size-3 shrink-0 text-muted-foreground transition-transform',
-            isOpen && 'rotate-180'
+            isOpen && 'rotate-180',
           )}
         />
       </button>

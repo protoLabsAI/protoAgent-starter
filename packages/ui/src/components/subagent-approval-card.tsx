@@ -119,7 +119,7 @@ export function SubagentApprovalCard({
         data-state="expired"
         className={cn(
           'my-1 flex max-w-full items-center gap-2 overflow-hidden rounded-md border border-border/50 bg-muted/30 px-3 py-2.5 text-xs text-muted-foreground',
-          className
+          className,
         )}
       >
         <Clock className="size-3.5 shrink-0" />
@@ -138,7 +138,7 @@ export function SubagentApprovalCard({
         data-state="denied"
         className={cn(
           'my-1 flex max-w-full items-center gap-2 overflow-hidden rounded-md border border-border/50 bg-muted/30 px-3 py-2.5 text-xs text-muted-foreground',
-          className
+          className,
         )}
       >
         <ShieldX className="size-3.5 shrink-0" />
@@ -157,7 +157,7 @@ export function SubagentApprovalCard({
         data-state="approving"
         className={cn(
           'my-1 flex max-w-full items-center gap-2 overflow-hidden rounded-md border border-blue-500/30 bg-blue-500/5 px-3 py-2.5 text-xs',
-          className
+          className,
         )}
       >
         <Loader2 className="size-3.5 shrink-0 animate-spin text-blue-500" />
@@ -175,7 +175,7 @@ export function SubagentApprovalCard({
       data-state="pending"
       className={cn(
         'my-1 max-w-full overflow-hidden rounded-md border border-blue-500/40 bg-blue-500/5 text-xs',
-        className
+        className,
       )}
     >
       {/* Header */}

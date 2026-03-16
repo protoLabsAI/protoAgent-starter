@@ -66,7 +66,7 @@ export class LangfuseClient implements TracingClientInterface {
     } catch (error) {
       this._logger.error?.(
         '[LangfuseClient] Failed to initialize. Is `langfuse` installed?',
-        error
+        error,
       );
       this._enabled = false;
     }
@@ -111,7 +111,7 @@ export class LangfuseClient implements TracingClientInterface {
 
   updateTrace(
     traceId: string,
-    data: { input?: unknown; output?: unknown; metadata?: Record<string, unknown> }
+    data: { input?: unknown; output?: unknown; metadata?: Record<string, unknown> },
   ): void {
     if (!this.isAvailable()) return;
     try {

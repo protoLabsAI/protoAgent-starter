@@ -8,7 +8,7 @@ export function createStateAnnotation<T extends Record<string, z.ZodTypeAny>>(
   schema: z.ZodObject<T>,
   reducers?: Partial<{
     [K in keyof T]: (left: z.infer<T[K]>, right: z.infer<T[K]>) => z.infer<T[K]>;
-  }>
+  }>,
 ) {
   const schemaShape = schema.shape as T;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -36,7 +36,7 @@ export function createStateAnnotation<T extends Record<string, z.ZodTypeAny>>(
  */
 export function validateState<T extends z.ZodTypeAny>(
   schema: T,
-  state: unknown
+  state: unknown,
 ): { success: true; data: z.infer<T> } | { success: false; error: z.ZodError } {
   const result = schema.safeParse(state);
 
@@ -88,7 +88,7 @@ export function deepMergeState<T extends Record<string, unknown>>(left: T, right
     ) {
       result[key] = deepMergeState(
         leftValue as Record<string, unknown>,
-        rightValue as Record<string, unknown>
+        rightValue as Record<string, unknown>,
       );
     } else {
       result[key] = rightValue;
@@ -103,7 +103,7 @@ export function deepMergeState<T extends Record<string, unknown>>(left: T, right
  */
 export function isValidStateUpdate<T extends z.ZodObject<z.ZodRawShape>>(
   schema: T,
-  value: unknown
+  value: unknown,
 ): value is Partial<z.infer<T>> {
   const result = schema.partial().safeParse(value);
   return result.success;

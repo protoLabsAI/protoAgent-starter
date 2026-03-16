@@ -36,7 +36,7 @@ registry.registerMany([getWeatherTool, searchWebTool]);
 
 const server = new Server(
   { name: 'proto-agent', version: '0.1.0' },
-  { capabilities: { tools: {} } }
+  { capabilities: { tools: {} } },
 );
 
 const mcpTools = toMCPTools(registry.listTools());

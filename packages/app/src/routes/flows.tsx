@@ -112,13 +112,13 @@ function FlowsPageInner() {
   const handleNodeDataChange = useCallback(
     (id: string, patch: Partial<FlowNodeData>) => {
       setNodes((nds) =>
-        nds.map((n) => (n.id === id ? { ...n, data: { ...n.data, ...patch } } : n))
+        nds.map((n) => (n.id === id ? { ...n, data: { ...n.data, ...patch } } : n)),
       );
       setSelectedNode((prev) =>
-        prev?.id === id ? { ...prev, data: { ...prev.data, ...patch } } : prev
+        prev?.id === id ? { ...prev, data: { ...prev.data, ...patch } } : prev,
       );
     },
-    [setNodes]
+    [setNodes],
   );
 
   // ── Delete node ────────────────────────────────────────────────────────────
@@ -128,7 +128,7 @@ function FlowsPageInner() {
       setEdges((eds) => eds.filter((e) => e.source !== id && e.target !== id));
       setSelectedNode(null);
     },
-    [setNodes, setEdges]
+    [setNodes, setEdges],
   );
 
   // ── Render ────────────────────────────────────────────────────────────────

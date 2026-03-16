@@ -191,7 +191,7 @@ export function ChatMessageMarkdown({
               const citationIndex = parseInt(attrs['data-citation-index'] ?? '0', 10);
 
               const resolved = citations?.find(
-                (c) => c.id === citationId && c.type === citationType
+                (c) => c.id === citationId && c.type === citationType,
               );
 
               return (

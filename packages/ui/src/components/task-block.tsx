@@ -133,7 +133,7 @@ function ToolRow({ tool }: { tool: ToolInvocationItem }) {
 export function TaskBlock({ tools, className, onToolApprove, onToolReject }: TaskBlockProps) {
   const allDone = tools.length > 0 && tools.every((t) => DONE_STATES.includes(t.state));
   const hasApprovalPending = tools.some(
-    (t) => t.state === 'approval-requested' || t.state === 'output-denied'
+    (t) => t.state === 'approval-requested' || t.state === 'output-denied',
   );
 
   // Default collapsed — but auto-expand when approval is needed
@@ -152,7 +152,7 @@ export function TaskBlock({ tools, className, onToolApprove, onToolReject }: Tas
         'my-1.5 rounded-md border border-border/50 bg-muted/30 text-xs',
         hasError && 'border-destructive/30',
         hasApprovalPending && 'border-yellow-500/40',
-        className
+        className,
       )}
     >
       {/* Collapsible header */}
@@ -183,7 +183,7 @@ export function TaskBlock({ tools, className, onToolApprove, onToolReject }: Tas
         <ChevronDown
           className={cn(
             'size-3 shrink-0 text-muted-foreground transition-transform',
-            effectiveOpen && 'rotate-180'
+            effectiveOpen && 'rotate-180',
           )}
         />
       </button>

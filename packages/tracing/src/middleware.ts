@@ -94,7 +94,7 @@ export interface TracedInvocationResult<T> {
 // ---------------------------------------------------------------------------
 
 function extractUsageFromMessages(
-  messages: unknown[]
+  messages: unknown[],
 ): { promptTokens: number; completionTokens: number; totalTokens: number } | undefined {
   let promptTokens = 0;
   let completionTokens = 0;
@@ -174,7 +174,7 @@ const DEFAULT_PRICING: Record<string, { input: number; output: number }> = {
 export function calculateCost(
   model: string,
   usage?: { promptTokens: number; completionTokens: number },
-  customPricing?: Record<string, { input: number; output: number }>
+  customPricing?: Record<string, { input: number; output: number }>,
 ): number | undefined {
   if (!usage) return undefined;
 
@@ -220,7 +220,7 @@ export async function* wrapProviderWithTracing<T>(
     metadata?: Record<string, unknown>;
     tags?: string[];
     input?: unknown;
-  }
+  },
 ): AsyncGenerator<T> {
   const log = config.logger ?? console;
 
@@ -328,7 +328,7 @@ export async function* wrapProviderWithTracing<T>(
     const cost = calculateCost(
       options.model,
       usage,
-      config.pricing as Record<string, { input: number; output: number }> | undefined
+      config.pricing as Record<string, { input: number; output: number }> | undefined,
     );
 
     const generationMetadata: Record<string, unknown> = {
@@ -403,7 +403,7 @@ export function createTracingContext(
     userId?: string;
     metadata?: Record<string, unknown>;
     tags?: string[];
-  } = {}
+  } = {},
 ): TracingContext {
   const traceId = randomUUID();
   const generationId = randomUUID();
@@ -435,7 +435,7 @@ export async function completeTracingContext(
     output?: unknown;
     usage?: { promptTokens: number; completionTokens: number; totalTokens: number };
     error?: Error;
-  }
+  },
 ): Promise<void> {
   if (!client.isAvailable()) return;
 

@@ -43,7 +43,7 @@ import type { SharedTool, ToolContext, ToolResult } from '../types.js';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function toLangGraphTool<TInput = unknown, TOutput = unknown>(
   tool: SharedTool<TInput, TOutput>,
-  context: ToolContext = {}
+  context: ToolContext = {},
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): any {
   // Dynamic require avoids a hard compile-time dependency on @langchain/core.

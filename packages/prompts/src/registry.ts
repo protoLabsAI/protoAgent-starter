@@ -71,7 +71,7 @@ export class PromptRegistry {
    */
   createPromptFromTemplate(
     role: string,
-    variables: Record<string, string> = {}
+    variables: Record<string, string> = {},
   ): string | undefined {
     const entry = this.prompts.get(role);
     if (!entry) return undefined;
