@@ -6,9 +6,9 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "pnpm run dev --filter=packages/server & pnpm run dev --filter=packages/app",
-    "build": "pnpm run build --recursive --if-present",
-    "typecheck": "pnpm run typecheck --recursive --if-present"
+    "dev": "pnpm -r --parallel --filter \"./packages/server\" --filter \"./packages/app\" run dev",
+    "build": "pnpm -r --if-present run build",
+    "typecheck": "pnpm -r --if-present run typecheck"
   },
   "engines": {
     "node": ">=20"
