@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
-    "proto-agent-tools": "*"
+    "proto-agent-tools": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
