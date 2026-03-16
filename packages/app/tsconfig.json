@@ -11,7 +11,12 @@
     "noFallthroughCasesInSwitch": true,
     "skipLibCheck": true,
     "outDir": "dist",
-    "rootDir": "src"
+    "rootDir": "src",
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  "references": [{ "path": "../ui" }]
 }

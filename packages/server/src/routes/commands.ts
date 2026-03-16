@@ -29,7 +29,7 @@ import { listCommands } from '../commands/registry.js';
 // Side-effect import: registers all built-in commands into the registry
 import '../commands/example.js';
 
-const router = Router();
+const router: Router = Router();
 
 // ─── GET / ────────────────────────────────────────────────────────────────────
 

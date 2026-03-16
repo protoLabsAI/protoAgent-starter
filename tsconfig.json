@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "composite": true
+  },
+  "files": [],
+  "references": [
+    { "path": "packages/app" },
+    { "path": "packages/flows" },
+    { "path": "packages/mcp" },
+    { "path": "packages/prompts" },
+    { "path": "packages/server" },
+    { "path": "packages/tools" },
+    { "path": "packages/tracing" },
+    { "path": "packages/ui" }
+  ]
+}

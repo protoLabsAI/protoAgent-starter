@@ -61,7 +61,7 @@ function Sidebar() {
     <nav className="flex w-16 shrink-0 flex-col items-center gap-1 border-r border-border bg-card py-4">
       {navItems.map(({ to, label, icon: Icon, exact }) => (
         <Link key={to} to={to} className="w-[52px]" activeOptions={{ exact }}>
-          {({ isActive }) => (
+          {({ isActive }: { isActive: boolean }) => (
             <span
               className={`flex flex-col items-center gap-1 rounded-lg px-2 py-2.5 text-[10px] font-medium transition-colors ${
                 isActive

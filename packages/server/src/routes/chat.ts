@@ -46,7 +46,7 @@ import { toolProgress } from '../tools/progress.js';
 // Side-effect import: registers all built-in commands into the registry
 import '../commands/example.js';
 
-const router = Router();
+const router: Router = Router();
 
 // ─── Anthropic provider with CLI auth support ─────────────────────────────────
 //

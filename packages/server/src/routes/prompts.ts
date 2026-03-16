@@ -25,7 +25,7 @@ import { Router, type Request, type Response } from 'express';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const router = Router();
+const router: Router = Router();
 
 // ─── Paths ────────────────────────────────────────────────────────────────────
 

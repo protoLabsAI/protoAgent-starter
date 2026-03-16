@@ -9,7 +9,7 @@
 import { Router, type Request, type Response } from 'express';
 import { traceStore } from '../tracing/trace-store.js';
 
-const router = Router();
+const router: Router = Router();
 
 // ── GET / ─────────────────────────────────────────────────────────────────────
 
