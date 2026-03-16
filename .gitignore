@@ -1,5 +1,16 @@
-node_modules
-dist
-pnpm-debug.log
-.pnpm-store
-.automaker-lock
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+
+# Turborepo cache
+.turbo/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# OS files
+.DS_Store
