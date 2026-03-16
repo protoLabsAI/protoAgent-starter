@@ -32,7 +32,7 @@ import { listRoles, getRole } from '../roles/index.js';
 // registered before any request is handled.
 import '../roles/assistant.js';
 
-const router = Router();
+const router: Router = Router();
 
 // ── GET / ─────────────────────────────────────────────────────────────────────
 
