@@ -6,12 +6,17 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "pnpm -r --parallel --filter \"./packages/server\" --filter \"./packages/app\" run dev",
-    "build": "pnpm -r --if-present run build",
-    "typecheck": "pnpm -r --if-present run typecheck"
+    "dev": "turbo run dev --filter=./packages/server --filter=./packages/app",
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "lint": "turbo run lint"
   },
   "engines": {
     "node": ">=20"
   },
-  "packageManager": "pnpm@10.18.2"
+  "packageManager": "pnpm@10.18.2",
+  "devDependencies": {
+    "turbo": "^2.8.17"
+  }
 }
