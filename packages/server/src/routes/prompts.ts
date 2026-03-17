@@ -22,6 +22,7 @@
  *   PUT /api/prompts/:role    → save updated content to the filesystem
  */
 
+import { execSync } from 'node:child_process';
 import { Router, type Request, type Response } from 'express';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -33,6 +34,20 @@ const router: Router = Router();
 // ─── Paths ────────────────────────────────────────────────────────────────────
 
 const PROMPTS_DIR = path.join(process.cwd(), 'prompts');
+
+// ─── Git helper ───────────────────────────────────────────────────────────────
+
+/**
+ * Run a shell command synchronously, capturing stdout.
+ * Returns stdout on success or null on error.
+ */
+function runCommand(cmd: string, cwd: string): string | null {
+  try {
+    return execSync(cmd, { cwd, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
+  } catch {
+    return null;
+  }
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -348,6 +363,65 @@ router.delete('/:role', (req: Request, res: Response): void => {
   } catch (err) {
     console.error(`[DELETE /api/prompts/${id}]`, err);
     res.status(500).json({ error: 'Failed to delete prompt' });
+  }
+});
+
+// ─── POST /:role/revert — revert a prompt to a previous version ───────────────
+
+router.post('/:role/revert', (req: Request, res: Response): void => {
+  const id = sanitiseId(String(req.params['role'] ?? ''));
+  if (!id) {
+    res.status(400).json({ error: 'Invalid prompt role' });
+    return;
+  }
+
+  const filepath = path.join(PROMPTS_DIR, `${id}.md`);
+  if (!fs.existsSync(filepath)) {
+    res.status(404).json({ error: `Prompt "${id}" not found` });
+    return;
+  }
+
+  const { commitHash } = req.body as { commitHash?: unknown };
+  if (typeof commitHash !== 'string' || !commitHash) {
+    res.status(400).json({ error: '"commitHash" is required' });
+    return;
+  }
+
+  try {
+    const repoRoot = runCommand('git rev-parse --show-toplevel', PROMPTS_DIR) ?? process.cwd();
+    const relPath = path.relative(repoRoot, filepath);
+
+    // Resolve a short hash for use in the commit message
+    const shortHash =
+      runCommand(`git rev-parse --short "${commitHash}"`, repoRoot) ?? commitHash.slice(0, 7);
+
+    // Retrieve the file content at the specified commit
+    const oldContent = runCommand(`git show "${commitHash}:${relPath}"`, repoRoot);
+    if (oldContent === null) {
+      res
+        .status(404)
+        .json({ error: `Commit "${commitHash}" not found or does not contain this prompt` });
+      return;
+    }
+
+    // Write old content to disk as a new commit (keeps history linear)
+    fs.writeFileSync(filepath, oldContent, 'utf-8');
+
+    const commitMessage = `Revert prompt ${id} to ${shortHash}`;
+    runCommand(`git add "${relPath}"`, repoRoot);
+    runCommand(`git commit -m "${commitMessage}"`, repoRoot);
+
+    // PromptRegistry reloads on next read — loadPrompt reads fresh from disk
+    const restored = loadPrompt(id);
+    if (!restored) {
+      res.status(500).json({ error: 'Failed to load restored prompt' });
+      return;
+    }
+
+    res.json(restored);
+  } catch (err) {
+    console.error(`[POST /api/prompts/${id}/revert]`, err);
+    res.status(500).json({ error: 'Failed to revert prompt' });
   }
 });
 
