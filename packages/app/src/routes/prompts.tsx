@@ -10,7 +10,7 @@
  * Data flow:
  *   Load  → GET /api/prompts             (list from filesystem)
  *   Edit  → local state                  (content, variables, model)
- *   Save  → PUT /api/prompts/:id         (writes body back to the .md file)
+ *   Save  → PUT /api/prompts/:role       (writes body back to the .md file)
  *   Test  → POST /api/chat               (system = substituted prompt content)
  *
  * Streaming:
@@ -21,6 +21,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { PromptEditor, applyVariables } from '../components/prompt-editor.js';
+import { usePromptEditor, type PromptFile } from '../hooks/use-prompt-editor.js';
 
 // ─── Route ────────────────────────────────────────────────────────────────────
 
@@ -30,17 +31,148 @@ export const Route = createFileRoute('/prompts')({
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-interface PromptFile {
-  id: string;
-  name: string;
-  description: string;
-  variables: string[];
-  content: string;
-}
-
 interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
+}
+
+// ─── NewPromptModal ───────────────────────────────────────────────────────────
+
+interface NewPromptModalProps {
+  onConfirm: (id: string, name: string) => void;
+  onCancel: () => void;
+}
+
+function NewPromptModal({ onConfirm, onCancel }: NewPromptModalProps) {
+  const [id, setId] = useState('');
+  const [name, setName] = useState('');
+
+  const safeId = id.replace(/[^a-zA-Z0-9_-]/g, '');
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!safeId) return;
+    onConfirm(safeId, name || safeId);
+  };
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0,0,0,0.4)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1000,
+      }}
+    >
+      <div
+        style={{
+          background: 'var(--background)',
+          border: '1px solid var(--border)',
+          borderRadius: 8,
+          padding: '1.5rem',
+          width: 360,
+          boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+        }}
+      >
+        <h2 style={{ margin: '0 0 1rem', fontSize: '1rem', fontWeight: 600 }}>New Prompt</h2>
+        <form onSubmit={handleSubmit}>
+          <label
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 4,
+              fontSize: '0.8125rem',
+              marginBottom: '0.75rem',
+            }}
+          >
+            <span style={{ color: 'var(--text-secondary)' }}>Role / ID</span>
+            <input
+              type="text"
+              value={id}
+              onChange={(e) => setId(e.target.value)}
+              placeholder="e.g. code-reviewer"
+              autoFocus
+              required
+              style={{
+                padding: '6px 10px',
+                background: 'var(--surface-2)',
+                border: '1px solid var(--border)',
+                borderRadius: 4,
+                color: 'var(--foreground)',
+                fontSize: '0.8125rem',
+                outline: 'none',
+                fontFamily: 'var(--font-mono)',
+              }}
+            />
+          </label>
+
+          <label
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 4,
+              fontSize: '0.8125rem',
+              marginBottom: '1.25rem',
+            }}
+          >
+            <span style={{ color: 'var(--text-secondary)' }}>Display Name (optional)</span>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Code Reviewer"
+              style={{
+                padding: '6px 10px',
+                background: 'var(--surface-2)',
+                border: '1px solid var(--border)',
+                borderRadius: 4,
+                color: 'var(--foreground)',
+                fontSize: '0.8125rem',
+                outline: 'none',
+              }}
+            />
+          </label>
+
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+            <button
+              type="button"
+              onClick={onCancel}
+              style={{
+                padding: '6px 14px',
+                background: 'var(--surface-2)',
+                border: '1px solid var(--border)',
+                borderRadius: 4,
+                color: 'var(--text-secondary)',
+                fontSize: '0.8125rem',
+                cursor: 'pointer',
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={!safeId}
+              style={{
+                padding: '6px 14px',
+                background: safeId ? 'var(--primary)' : 'var(--surface-3)',
+                border: 'none',
+                borderRadius: 4,
+                color: safeId ? 'var(--primary-foreground)' : 'var(--text-muted)',
+                fontSize: '0.8125rem',
+                fontWeight: 600,
+                cursor: safeId ? 'pointer' : 'not-allowed',
+              }}
+            >
+              Create
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
 }
 
 // ─── PromptsPage ──────────────────────────────────────────────────────────────
@@ -50,13 +182,10 @@ function PromptsPage() {
   const [prompts, setPrompts] = useState<PromptFile[]>([]);
   const [loadingList, setLoadingList] = useState(true);
   const [listError, setListError] = useState<string | null>(null);
+  const [showNewModal, setShowNewModal] = useState(false);
 
-  // ── Selected prompt state ────────────────────────────────────────────────
-  const [selected, setSelected] = useState<PromptFile | null>(null);
-  const [editContent, setEditContent] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const [saveSuccess, setSaveSuccess] = useState(false);
+  // ── Prompt editor hook ───────────────────────────────────────────────────
+  const editor = usePromptEditor();
 
   // ── Model and variable state ─────────────────────────────────────────────
   const [model, setModel] = useState('claude-opus-4-6');
@@ -97,47 +226,45 @@ function PromptsPage() {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // ── Auto-dismiss save confirmation ───────────────────────────────────────
+
+  useEffect(() => {
+    if (editor.saveConfirmation) {
+      const timer = setTimeout(() => {
+        editor.dismissConfirmation();
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [editor.saveConfirmation, editor.dismissConfirmation]);
+
   // ── Select a prompt ──────────────────────────────────────────────────────
 
   const handleSelect = (p: PromptFile) => {
-    setSelected(p);
-    setEditContent(p.content);
+    editor.load(p);
     setVariables({});
     setMessages([]);
-    setSaveError(null);
-    setSaveSuccess(false);
     setStreamError(null);
   };
 
   // ── Save prompt ──────────────────────────────────────────────────────────
 
   const handleSave = async () => {
-    if (!selected) return;
-    setIsSaving(true);
-    setSaveError(null);
-    setSaveSuccess(false);
+    const updated = await editor.save();
+    if (updated) {
+      setPrompts((prev) => prev.map((p) => (p.role === updated.role ? updated : p)));
+    }
+  };
 
-    try {
-      const res = await fetch(`/api/prompts/${selected.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: editContent }),
-      });
+  // ── Create new prompt ────────────────────────────────────────────────────
 
-      if (!res.ok) {
-        const err = (await res.json()) as { error?: string };
-        throw new Error(err.error ?? `Server returned ${res.status}`);
-      }
-
-      const updated = (await res.json()) as PromptFile;
-      setSelected(updated);
-      setPrompts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 2000);
-    } catch (err) {
-      setSaveError(err instanceof Error ? err.message : 'Failed to save');
-    } finally {
-      setIsSaving(false);
+  const handleCreatePrompt = async (id: string, name: string) => {
+    setShowNewModal(false);
+    const created = await editor.create(id, name);
+    if (created) {
+      setPrompts((prev) => [...prev, created].sort((a, b) => a.name.localeCompare(b.name)));
+      editor.load(created);
+      setVariables({});
+      setMessages([]);
     }
   };
 
@@ -146,10 +273,7 @@ function PromptsPage() {
   const handleSend = async () => {
     if (!userInput.trim() || isStreaming) return;
 
-    // Apply variable substitutions to get the resolved system prompt
-    const systemPrompt = applyVariables(editContent, variables);
-
-    // Build the updated message list to send
+    const systemPrompt = applyVariables(editor.body, variables);
     const userMsg: ChatMessage = { role: 'user', content: userInput.trim() };
     const historyWithUser = [...messages, userMsg];
 
@@ -158,10 +282,8 @@ function PromptsPage() {
     setIsStreaming(true);
     setStreamError(null);
 
-    // Optimistically append an empty assistant bubble to stream into
     setMessages((prev) => [...prev, { role: 'assistant', content: '' }]);
 
-    // Create an AbortController so the user can cancel in-flight requests
     const controller = new AbortController();
     abortRef.current = controller;
 
@@ -181,8 +303,6 @@ function PromptsPage() {
       if (!res.ok) throw new Error(`Server returned ${res.status}`);
       if (!res.body) throw new Error('No response body from server');
 
-      // Stream the Vercel AI SDK UI message stream.
-      // Text deltas arrive as lines prefixed with `0:`, e.g.:  0:"Hello, "
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let assistantText = '';
@@ -211,10 +331,9 @@ function PromptsPage() {
         }
       }
     } catch (err) {
-      if ((err as Error).name === 'AbortError') return; // user cancelled
+      if ((err as Error).name === 'AbortError') return;
 
       setStreamError(err instanceof Error ? err.message : 'Streaming failed');
-      // Remove the empty assistant bubble on error
       setMessages((prev) => {
         if (prev[prev.length - 1]?.content === '') return prev.slice(0, -1);
         return prev;
@@ -229,13 +348,9 @@ function PromptsPage() {
     abortRef.current?.abort();
   };
 
-  // ── Variable change ──────────────────────────────────────────────────────
-
   const handleVariableChange = (name: string, value: string) => {
     setVariables((prev) => ({ ...prev, [name]: value }));
   };
-
-  // ── Keyboard shortcut: Enter sends, Shift+Enter inserts newline ──────────
 
   const handleInputKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -260,6 +375,7 @@ function PromptsPage() {
     >
       {/* ── Left sidebar: prompt list ─────────────────────────────────── */}
       <aside
+        data-testid="prompt-list-panel"
         style={{
           width: '17rem',
           borderRight: '1px solid var(--border)',
@@ -277,10 +393,28 @@ function PromptsPage() {
             flexShrink: 0,
           }}
         >
-          <h1 style={{ margin: 0, fontSize: '1rem', fontWeight: 600 }}>Prompts</h1>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <h1 style={{ margin: 0, fontSize: '1rem', fontWeight: 600 }}>Prompts</h1>
+            <button
+              type="button"
+              onClick={() => setShowNewModal(true)}
+              style={{
+                padding: '3px 10px',
+                background: 'var(--primary)',
+                border: 'none',
+                borderRadius: 4,
+                color: 'var(--primary-foreground)',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              + New
+            </button>
+          </div>
           <p style={{ margin: '0.125rem 0 0', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
             {loadingList
-              ? 'Loading…'
+              ? 'Loading\u2026'
               : `${prompts.length} template${prompts.length !== 1 ? 's' : ''}`}
           </p>
         </div>
@@ -297,7 +431,7 @@ function PromptsPage() {
               flexShrink: 0,
             }}
           >
-            ⚠ {listError}
+            {listError}
           </div>
         )}
 
@@ -313,29 +447,29 @@ function PromptsPage() {
                 lineHeight: 1.6,
               }}
             >
-              <div style={{ fontSize: '1.75rem', marginBottom: '0.5rem' }}>📝</div>
               No prompts found.
               <br />
               <span style={{ fontSize: '0.6875rem' }}>
-                Add <code style={{ fontFamily: 'var(--font-mono)' }}>.md</code> files in{' '}
-                <code style={{ fontFamily: 'var(--font-mono)' }}>packages/server/prompts/</code>
+                Click <strong>+ New</strong> to create your first prompt template.
               </span>
             </div>
           )}
 
           {prompts.map((p) => (
             <button
-              key={p.id}
+              key={p.role}
               type="button"
               onClick={() => handleSelect(p)}
               style={{
                 width: '100%',
                 padding: '0.75rem 1rem',
-                background: selected?.id === p.id ? 'var(--surface-2)' : 'transparent',
+                background: editor.original?.role === p.role ? 'var(--surface-2)' : 'transparent',
                 border: 'none',
                 borderBottom: '1px solid var(--border)',
                 borderLeft:
-                  selected?.id === p.id ? '2px solid var(--primary)' : '2px solid transparent',
+                  editor.original?.role === p.role
+                    ? '2px solid var(--primary)'
+                    : '2px solid transparent',
                 cursor: 'pointer',
                 textAlign: 'left',
                 color: 'var(--foreground)',
@@ -346,7 +480,18 @@ function PromptsPage() {
                 {p.name}
               </div>
 
-              {p.description && (
+              <div
+                style={{
+                  fontSize: '0.6875rem',
+                  color: 'var(--text-muted)',
+                  fontFamily: 'var(--font-mono)',
+                  marginBottom: p.metadata.description ? '0.2rem' : 0,
+                }}
+              >
+                {p.role}
+              </div>
+
+              {p.metadata.description && (
                 <div
                   style={{
                     fontSize: '0.6875rem',
@@ -358,7 +503,7 @@ function PromptsPage() {
                     WebkitBoxOrient: 'vertical',
                   }}
                 >
-                  {p.description}
+                  {p.metadata.description}
                 </div>
               )}
 
@@ -389,9 +534,12 @@ function PromptsPage() {
       </aside>
 
       {/* ── Right panel ──────────────────────────────────────────────────── */}
-      {selected ? (
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          {/* Panel header */}
+      {editor.original ? (
+        <div
+          data-testid="prompt-editor-panel"
+          style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+        >
+          {/* Panel header with frontmatter fields */}
           <div
             style={{
               padding: '0.625rem 1rem',
@@ -400,38 +548,156 @@ function PromptsPage() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: 8,
             }}
           >
-            <div>
-              <h2 style={{ margin: 0, fontSize: '0.9375rem', fontWeight: 600 }}>{selected.name}</h2>
-              {selected.description && (
-                <p
-                  style={{ margin: '0.1rem 0 0', fontSize: '0.75rem', color: 'var(--text-muted)' }}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+              {/* Name field */}
+              <label
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 5,
+                  fontSize: '0.75rem',
+                  color: 'var(--text-secondary)',
+                }}
+              >
+                Name
+                <input
+                  type="text"
+                  value={editor.name}
+                  onChange={(e) => editor.setName(e.target.value)}
+                  style={{
+                    padding: '3px 7px',
+                    background: 'var(--surface-2)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 4,
+                    color: 'var(--foreground)',
+                    fontSize: '0.8125rem',
+                    fontWeight: 600,
+                    width: 180,
+                    outline: 'none',
+                  }}
+                />
+              </label>
+
+              {/* Role (read-only) */}
+              <label
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 5,
+                  fontSize: '0.75rem',
+                  color: 'var(--text-secondary)',
+                }}
+              >
+                Role
+                <span
+                  style={{
+                    padding: '3px 7px',
+                    background: 'var(--surface)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 4,
+                    color: 'var(--text-muted)',
+                    fontSize: '0.75rem',
+                    fontFamily: 'var(--font-mono)',
+                  }}
                 >
-                  {selected.description}
-                </p>
-              )}
+                  {editor.role}
+                </span>
+              </label>
+
+              {/* Version field */}
+              <label
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 5,
+                  fontSize: '0.75rem',
+                  color: 'var(--text-secondary)',
+                }}
+              >
+                Version
+                <input
+                  type="text"
+                  value={editor.version}
+                  onChange={(e) => editor.setVersion(e.target.value)}
+                  style={{
+                    padding: '3px 7px',
+                    background: 'var(--surface-2)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 4,
+                    color: 'var(--foreground)',
+                    fontSize: '0.75rem',
+                    fontFamily: 'var(--font-mono)',
+                    width: 80,
+                    outline: 'none',
+                  }}
+                />
+              </label>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              {/* Save feedback */}
-              {saveSuccess && (
-                <span style={{ fontSize: '0.75rem', color: 'var(--success)' }}>✓ Saved</span>
-              )}
-              {saveError && (
-                <span style={{ fontSize: '0.75rem', color: 'var(--error)' }} title={saveError}>
-                  ⚠ Save failed
+              {/* Unsaved changes indicator */}
+              {editor.isDirty && (
+                <span
+                  style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontStyle: 'italic' }}
+                >
+                  Unsaved changes
                 </span>
               )}
 
+              {/* Save confirmation */}
+              {editor.saveConfirmation && (
+                <span style={{ fontSize: '0.75rem', color: 'var(--success)' }}>
+                  {editor.saveConfirmation.message}
+                </span>
+              )}
+
+              {/* Save error */}
+              {editor.saveError && (
+                <span
+                  style={{ fontSize: '0.75rem', color: 'var(--error)' }}
+                  title={editor.saveError}
+                >
+                  Save failed
+                </span>
+              )}
+
+              {/* Save button */}
+              <button
+                type="button"
+                onClick={() => void handleSave()}
+                disabled={editor.isSaving || !editor.isDirty}
+                style={{
+                  padding: '4px 14px',
+                  background:
+                    editor.isSaving || !editor.isDirty ? 'var(--surface-3)' : 'var(--primary)',
+                  border: 'none',
+                  borderRadius: 4,
+                  color:
+                    editor.isSaving || !editor.isDirty
+                      ? 'var(--text-muted)'
+                      : 'var(--primary-foreground)',
+                  fontSize: '0.8125rem',
+                  fontWeight: 600,
+                  cursor: editor.isSaving || !editor.isDirty ? 'not-allowed' : 'pointer',
+                  opacity: editor.isSaving ? 0.7 : 1,
+                }}
+              >
+                {editor.isSaving ? 'Saving\u2026' : 'Save'}
+              </button>
+
+              {/* Close button */}
               <button
                 type="button"
                 onClick={() => {
-                  setSelected(null);
+                  editor.reset();
                   setMessages([]);
                 }}
                 style={{
-                  padding: '0.3rem 0.625rem',
+                  padding: '4px 10px',
                   background: 'var(--surface-2)',
                   border: '1px solid var(--border)',
                   borderRadius: 4,
@@ -440,7 +706,7 @@ function PromptsPage() {
                   fontSize: '0.75rem',
                 }}
               >
-                ✕ Close
+                Close
               </button>
             </div>
           </div>
@@ -458,10 +724,10 @@ function PromptsPage() {
               }}
             >
               <PromptEditor
-                content={editContent}
-                onChange={setEditContent}
+                content={editor.body}
+                onChange={editor.setBody}
                 onSave={() => void handleSave()}
-                isSaving={isSaving}
+                isSaving={editor.isSaving}
                 model={model}
                 onModelChange={setModel}
                 variables={variables}
@@ -535,10 +801,7 @@ function PromptsPage() {
                       textAlign: 'center',
                     }}
                   >
-                    <div>
-                      <div style={{ fontSize: '1.5rem', marginBottom: '0.4rem' }}>💬</div>
-                      Type a message to test the prompt with a live response
-                    </div>
+                    <div>Type a message to test the prompt with a live response</div>
                   </div>
                 ) : (
                   <>
@@ -556,16 +819,19 @@ function PromptsPage() {
                             maxWidth: '80%',
                             padding: '0.5rem 0.75rem',
                             borderRadius: 8,
-                            background: m.role === 'user' ? 'var(--primary)' : 'var(--surface-2)',
+                            background:
+                              m.role === 'user' ? 'var(--primary)' : 'var(--surface-2)',
                             color:
-                              m.role === 'user' ? 'var(--primary-foreground)' : 'var(--foreground)',
+                              m.role === 'user'
+                                ? 'var(--primary-foreground)'
+                                : 'var(--foreground)',
                             fontSize: '0.8125rem',
                             lineHeight: 1.55,
                             whiteSpace: 'pre-wrap',
                             wordBreak: 'break-word',
                           }}
                         >
-                          {m.content || <span style={{ opacity: 0.4 }}>▋</span>}
+                          {m.content || <span style={{ opacity: 0.4 }}>...</span>}
                         </div>
                       </div>
                     ))}
@@ -581,7 +847,7 @@ function PromptsPage() {
                           marginTop: '0.5rem',
                         }}
                       >
-                        ⚠ {streamError}
+                        {streamError}
                       </div>
                     )}
 
@@ -605,7 +871,7 @@ function PromptsPage() {
                   value={userInput}
                   onChange={(e) => setUserInput(e.target.value)}
                   onKeyDown={handleInputKeyDown}
-                  placeholder="Type a test message… (Enter to send, Shift+Enter for newline)"
+                  placeholder="Type a test message\u2026 (Enter to send, Shift+Enter for newline)"
                   disabled={isStreaming}
                   rows={2}
                   style={{
@@ -650,7 +916,9 @@ function PromptsPage() {
                       background: userInput.trim() ? 'var(--primary)' : 'var(--surface-2)',
                       border: 'none',
                       borderRadius: 6,
-                      color: userInput.trim() ? 'var(--primary-foreground)' : 'var(--text-muted)',
+                      color: userInput.trim()
+                        ? 'var(--primary-foreground)'
+                        : 'var(--text-muted)',
                       fontSize: '0.8125rem',
                       fontWeight: 600,
                       cursor: userInput.trim() ? 'pointer' : 'not-allowed',
@@ -677,16 +945,24 @@ function PromptsPage() {
           }}
         >
           <div>
-            <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>📝</div>
             <p style={{ margin: 0, fontSize: '0.875rem' }}>
               Select a template from the sidebar to start editing.
             </p>
             <p style={{ margin: '0.5rem 0 0', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-              Use <code style={{ fontFamily: 'var(--font-mono)' }}>{'{{variable}}'}</code>{' '}
+              Use{' '}
+              <code style={{ fontFamily: 'var(--font-mono)' }}>{'{{variable}}'}</code>{' '}
               placeholders for dynamic substitution.
             </p>
           </div>
         </main>
+      )}
+
+      {/* ── New prompt modal ─────────────────────────────────────────────── */}
+      {showNewModal && (
+        <NewPromptModal
+          onConfirm={(id, name) => void handleCreatePrompt(id, name)}
+          onCancel={() => setShowNewModal(false)}
+        />
       )}
     </div>
   );
