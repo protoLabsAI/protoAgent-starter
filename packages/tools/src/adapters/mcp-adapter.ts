@@ -70,7 +70,7 @@ function zodToMCPJsonSchema(zodSchema: any): {
 
   if (actualSchema['type'] !== 'object') {
     throw new Error(
-      `MCP tools require object schemas for input, got: ${JSON.stringify(actualSchema)}`
+      `MCP tools require object schemas for input, got: ${JSON.stringify(actualSchema)}`,
     );
   }
 
@@ -103,7 +103,7 @@ function zodToMCPJsonSchema(zodSchema: any): {
  * ```
  */
 export function toMCPTool<TInput = unknown, TOutput = unknown>(
-  tool: SharedTool<TInput, TOutput>
+  tool: SharedTool<TInput, TOutput>,
 ): MCPToolEntry {
   return {
     name: tool.name,

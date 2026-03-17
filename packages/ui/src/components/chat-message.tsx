@@ -192,12 +192,11 @@ function extractCitations(parts: Array<Record<string, unknown>>): Citation[] {
   return [];
 }
 
-
 function extractGroupText(group: PartSegment[]): string {
   return group
     .filter(
       (seg): seg is { kind: 'other'; part: Record<string, unknown>; partIndex: number } =>
-        seg.kind === 'other' && seg.part.type === 'text'
+        seg.kind === 'other' && seg.part.type === 'text',
     )
     .map((seg) => seg.part.text as string)
     .join('');
@@ -335,7 +334,7 @@ export function ChatMessage({
       p.type === 'step-start' ||
       isToolPart(p) ||
       p.type === 'source-url' ||
-      p.type === 'data-plan'
+      p.type === 'data-plan',
   );
   if (!hasContent) return null;
 

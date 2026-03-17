@@ -134,7 +134,7 @@ export function useToolProgress(wsUrl: string = DEFAULT_WS_URL): UseToolProgress
 
   const getProgressByToolName = useCallback(
     (toolName: string): string | undefined => progressByTool[toolName],
-    [progressByTool]
+    [progressByTool],
   );
 
   return { progressByTool, getProgressByToolName, connected };

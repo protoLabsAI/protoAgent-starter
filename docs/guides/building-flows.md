@@ -79,7 +79,7 @@ import { createBranchingGraph, createBinaryRouter } from 'proto-agent-flows';
 const qualityRouter = createBinaryRouter<{ score: number }>(
   (state) => state.score >= 0.8, // condition
   'publish', // true branch
-  'revise' // false branch
+  'revise', // false branch
 );
 
 const graph = createBranchingGraph({
@@ -174,7 +174,7 @@ const valueRouter = createValueRouter<{ decision: 'approve' | 'reject' | 'revise
     approve: 'publish-node',
     reject: 'archive-node',
     revise: 'editor-node',
-  }
+  },
 );
 
 // Combine routers: A AND B must both pass

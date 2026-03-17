@@ -85,7 +85,7 @@ export function SubagentBlock({
       className={cn(
         'my-1 rounded-md border border-border/50 bg-muted/30 text-xs',
         status === 'error' && 'border-destructive/30',
-        className
+        className,
       )}
     >
       {/* Header row */}
@@ -108,7 +108,7 @@ export function SubagentBlock({
         <span
           className={cn(
             'shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider',
-            config.badgeClass
+            config.badgeClass,
           )}
         >
           {subagentType}
@@ -125,7 +125,7 @@ export function SubagentBlock({
           <ChevronDown
             className={cn(
               'size-3 shrink-0 text-muted-foreground transition-transform',
-              isOpen && 'rotate-180'
+              isOpen && 'rotate-180',
             )}
           />
         )}

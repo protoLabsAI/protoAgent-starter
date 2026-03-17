@@ -60,7 +60,7 @@ const _clients = new Set<WebSocket>();
  * @returns The `WebSocketServer` instance.
  */
 export function startWebSocketServer(
-  port: number = parseInt(process.env['WS_PORT'] ?? '3002', 10)
+  port: number = parseInt(process.env['WS_PORT'] ?? '3002', 10),
 ): WebSocketServer {
   if (_wss) return _wss;
 

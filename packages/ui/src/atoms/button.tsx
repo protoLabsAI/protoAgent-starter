@@ -31,7 +31,7 @@ const buttonVariants = cva(
       variant: 'default',
       size: 'default',
     },
-  }
+  },
 );
 
 function ButtonSpinner({ className }: { className?: string }) {

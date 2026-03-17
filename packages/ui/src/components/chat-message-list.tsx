@@ -182,7 +182,7 @@ export function ChatMessageList({
     !lastMessage ||
     !(lastMessage.parts ?? []).some(
       (p): p is { type: 'text'; text: string } =>
-        p.type === 'text' && !!(p as { type: 'text'; text: string }).text
+        p.type === 'text' && !!(p as { type: 'text'; text: string }).text,
     );
   const showShimmer = !!isStreaming && lastMessageHasNoText;
 

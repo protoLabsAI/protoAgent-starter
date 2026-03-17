@@ -26,7 +26,7 @@ export interface TodoItem {
  */
 export function fileReducer(
   left: FileOperation[] | undefined,
-  right: FileOperation[] | undefined
+  right: FileOperation[] | undefined,
 ): FileOperation[] {
   if (!left && !right) return [];
   if (!left) return right || [];
@@ -63,7 +63,7 @@ export function fileReducer(
  */
 export function todoReducer(
   left: TodoItem[] | undefined,
-  right: TodoItem[] | undefined
+  right: TodoItem[] | undefined,
 ): TodoItem[] {
   if (!left && !right) return [];
   if (!left) return right || [];
@@ -128,7 +128,7 @@ export function setUnionReducer<T>(left: Set<T> | undefined, right: Set<T> | und
  */
 export function mapMergeReducer<K, V>(
   left: Map<K, V> | undefined,
-  right: Map<K, V> | undefined
+  right: Map<K, V> | undefined,
 ): Map<K, V> {
   if (!left && !right) return new Map<K, V>();
   if (!left) return right || new Map<K, V>();
@@ -177,7 +177,7 @@ export function minReducer(left: number | undefined, right: number | undefined):
  */
 export function idDedupAppendReducer<T extends { id: string }>(
   left: T[] | undefined,
-  right: T[] | undefined
+  right: T[] | undefined,
 ): T[] {
   if (!left && !right) return [];
   if (!left) return right || [];

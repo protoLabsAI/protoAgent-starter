@@ -119,7 +119,7 @@ export interface TracingClientInterface {
   createTrace(options: CreateTraceOptions): unknown;
   updateTrace(
     traceId: string,
-    data: { input?: unknown; output?: unknown; metadata?: Record<string, unknown> }
+    data: { input?: unknown; output?: unknown; metadata?: Record<string, unknown> },
   ): void;
   createGeneration(options: CreateGenerationOptions): unknown;
   createSpan(options: CreateSpanOptions): unknown;

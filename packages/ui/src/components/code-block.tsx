@@ -105,7 +105,7 @@ export function CodeBlock({ code, language, isStreaming, className }: CodeBlockP
       },
       () => {
         // Clipboard write failed (permission denied or insecure context)
-      }
+      },
     );
   }, [code]);
 
@@ -114,7 +114,7 @@ export function CodeBlock({ code, language, isStreaming, className }: CodeBlockP
       data-slot="code-block"
       className={cn(
         'group/code relative my-2 overflow-hidden rounded-md bg-background/50',
-        className
+        className,
       )}
     >
       {/* Header bar: language + copy button */}

@@ -127,21 +127,21 @@ export const useSessionStore = create<SessionStoreState & SessionActions>()(
                 // Auto-title once we have a first user message
                 title: s.title === 'New chat' ? autoTitle(messages) : s.title,
               }
-            : s
+            : s,
         );
         set({ sessions });
       },
 
       updateModel: (id, model) => {
         const sessions = get().sessions.map((s) =>
-          s.id === id ? { ...s, model, updatedAt: Date.now() } : s
+          s.id === id ? { ...s, model, updatedAt: Date.now() } : s,
         );
         set({ sessions });
       },
 
       updateTitle: (id, title) => {
         const sessions = get().sessions.map((s) =>
-          s.id === id ? { ...s, title, updatedAt: Date.now() } : s
+          s.id === id ? { ...s, title, updatedAt: Date.now() } : s,
         );
         set({ sessions });
       },
@@ -158,6 +158,6 @@ export const useSessionStore = create<SessionStoreState & SessionActions>()(
         sessions: state.sessions,
         currentSessionId: state.currentSessionId,
       }),
-    }
-  )
+    },
+  ),
 );

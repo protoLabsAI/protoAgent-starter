@@ -138,7 +138,7 @@ async function handleRejectedNode(state: ApprovalState): Promise<Partial<Approva
       auditEntry(
         'reject',
         'system',
-        `Request ${state.request?.id} rejected: ${state.reviewerNotes || state.errorMessage || 'No reason provided'}`
+        `Request ${state.request?.id} rejected: ${state.reviewerNotes || state.errorMessage || 'No reason provided'}`,
       ),
     ],
   };
@@ -157,7 +157,7 @@ const routeAfterReview = createSequentialRouter<ApprovalState>(
       node: 'process_approved',
     },
   ],
-  'await_approval' // default: re-enter approval loop if somehow still pending
+  'await_approval', // default: re-enter approval loop if somehow still pending
 );
 
 // --- Build Graph ---
@@ -251,7 +251,7 @@ export async function runHITLExample() {
       output: undefined,
       errorMessage: undefined,
     },
-    config
+    config,
   );
 
   console.log('Flow paused at approval gate:', initialResult);
@@ -264,7 +264,7 @@ export async function runHITLExample() {
       ...config,
       // In real usage, you'd use Command to resume with human input:
       // new Command({ resume: { decision: 'approved', notes: 'LGTM' } })
-    }
+    },
   );
 
   console.log('Final result:', finalResult);

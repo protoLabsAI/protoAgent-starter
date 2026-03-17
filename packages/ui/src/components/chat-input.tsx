@@ -103,7 +103,7 @@ export function ChatInput({
         handleSubmitInternal();
       }
     },
-    [handleSubmitInternal, slashCommands]
+    [handleSubmitInternal, slashCommands],
   );
 
   return (
@@ -112,7 +112,7 @@ export function ChatInput({
       className={cn(
         'border-t bg-background p-3',
         commandMode ? 'border-primary' : 'border-border',
-        className
+        className,
       )}
     >
       {/* Slash command dropdown — rendered above the textarea when active */}

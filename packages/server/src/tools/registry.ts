@@ -102,7 +102,7 @@ const confirmationRequired = new Set<string>();
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function registerTool(
-  tool: SharedTool<any, any> & { requiresConfirmation?: boolean }
+  tool: SharedTool<any, any> & { requiresConfirmation?: boolean },
 ): void {
   registry.register(tool);
   if (tool.requiresConfirmation) {

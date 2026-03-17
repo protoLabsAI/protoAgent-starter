@@ -61,7 +61,7 @@ export function FlowCanvas({
     (connection: Connection) => {
       onEdgesUpdate(addEdge({ ...connection, animated: true }, edges));
     },
-    [edges, onEdgesUpdate]
+    [edges, onEdgesUpdate],
   );
 
   // ── Drop handler — creates a new node from palette drag ───────────────────
@@ -99,7 +99,7 @@ export function FlowCanvas({
 
       onNodesUpdate([...nodes, newNode]);
     },
-    [nodes, onNodesUpdate]
+    [nodes, onNodesUpdate],
   );
 
   // ── Node click → select ───────────────────────────────────────────────────
@@ -107,7 +107,7 @@ export function FlowCanvas({
     (_: React.MouseEvent, node: Node<FlowNodeData>) => {
       onNodeSelect(node);
     },
-    [onNodeSelect]
+    [onNodeSelect],
   );
 
   const onPaneClick = useCallback(() => {

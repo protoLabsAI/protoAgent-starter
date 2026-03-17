@@ -135,7 +135,7 @@ export function ToolInvocationPart({
       className={cn(
         'my-1 max-w-full overflow-hidden rounded-md border border-border/50 bg-muted/30 text-xs',
         state === 'output-error' && 'border-destructive/30',
-        className
+        className,
       )}
     >
       <button
@@ -157,7 +157,7 @@ export function ToolInvocationPart({
         <ChevronDown
           className={cn(
             'size-3 shrink-0 text-muted-foreground transition-transform',
-            isOpen && 'rotate-180'
+            isOpen && 'rotate-180',
           )}
         />
       </button>

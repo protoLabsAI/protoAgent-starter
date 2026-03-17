@@ -79,7 +79,7 @@ export class FileTracer implements TracingClientInterface {
 
   updateTrace(
     traceId: string,
-    data: { input?: unknown; output?: unknown; metadata?: Record<string, unknown> }
+    data: { input?: unknown; output?: unknown; metadata?: Record<string, unknown> },
   ): void {
     const record = this.pending.get(traceId);
     if (!record) return;

@@ -16,7 +16,7 @@ export type ConditionalEdgeFunction<TState> = (state: TState) => NodeName | Node
 export function createBinaryRouter<TState>(
   condition: (state: TState) => boolean,
   trueNode: NodeName,
-  falseNode: NodeName
+  falseNode: NodeName,
 ): ConditionalEdgeFunction<TState> {
   return (state: TState) => {
     return condition(state) ? trueNode : falseNode;
@@ -29,7 +29,7 @@ export function createBinaryRouter<TState>(
 export function createValueRouter<TState, TValue>(
   getValue: (state: TState) => TValue,
   routes: Map<TValue, NodeName>,
-  defaultNode?: NodeName
+  defaultNode?: NodeName,
 ): ConditionalEdgeFunction<TState> {
   return (state: TState) => {
     const value = getValue(state);
@@ -55,7 +55,7 @@ export function createSequentialRouter<TState>(
     condition: (state: TState) => boolean;
     node: NodeName;
   }>,
-  defaultNode: NodeName
+  defaultNode: NodeName,
 ): ConditionalEdgeFunction<TState> {
   return (state: TState) => {
     for (const { condition, node } of conditions) {
@@ -71,7 +71,7 @@ export function createSequentialRouter<TState>(
  * Creates a router that routes to multiple nodes (parallel execution)
  */
 export function createParallelRouter<TState>(
-  getNodes: (state: TState) => NodeName[]
+  getNodes: (state: TState) => NodeName[],
 ): ConditionalEdgeFunction<TState> {
   return (state: TState) => {
     const nodes = getNodes(state);
@@ -88,7 +88,7 @@ export function createParallelRouter<TState>(
 export function createFieldRouter<TState, K extends keyof TState>(
   field: K,
   routes: Map<TState[K], NodeName>,
-  defaultNode?: NodeName
+  defaultNode?: NodeName,
 ): ConditionalEdgeFunction<TState> {
   return createValueRouter((state: TState) => state[field], routes, defaultNode);
 }
@@ -99,7 +99,7 @@ export function createFieldRouter<TState, K extends keyof TState>(
 export function createEndRouter<TState>(
   shouldEnd: (state: TState) => boolean,
   continueNode: NodeName,
-  endSymbol: typeof END
+  endSymbol: typeof END,
 ): ConditionalEdgeFunction<TState> {
   return (state: TState) => {
     return shouldEnd(state) ? endSymbol : continueNode;
@@ -110,7 +110,7 @@ export function createEndRouter<TState>(
  * Combines multiple routers with AND logic (all must agree on the same node)
  */
 export function combineRoutersAnd<TState>(
-  routers: Array<ConditionalEdgeFunction<TState>>
+  routers: Array<ConditionalEdgeFunction<TState>>,
 ): ConditionalEdgeFunction<TState> {
   return (state: TState) => {
     if (routers.length === 0) {
@@ -138,7 +138,7 @@ export function combineRoutersAnd<TState>(
  */
 export function combineRoutersOr<TState>(
   routers: Array<ConditionalEdgeFunction<TState>>,
-  defaultNode: NodeName
+  defaultNode: NodeName,
 ): ConditionalEdgeFunction<TState> {
   return (state: TState) => {
     for (const router of routers) {
@@ -168,7 +168,7 @@ export interface RouteMap<T> {
 export function createRouteMapRouter<TState>(
   getKey: (state: TState) => string,
   routeMap: RouteMap<NodeName>,
-  defaultNode?: NodeName
+  defaultNode?: NodeName,
 ): ConditionalEdgeFunction<TState> {
   return (state: TState) => {
     const key = getKey(state);

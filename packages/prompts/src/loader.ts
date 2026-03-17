@@ -60,7 +60,7 @@ export function parsePromptFile(source: string, filePath: string): ParsedPrompt 
   // Validate required fields
   if (!frontmatter['name'] || !frontmatter['role'] || !frontmatter['version']) {
     console.warn(
-      `[PromptLoader] Skipping ${filePath}: missing required frontmatter fields (name, role, version)`
+      `[PromptLoader] Skipping ${filePath}: missing required frontmatter fields (name, role, version)`,
     );
     return null;
   }
@@ -157,7 +157,7 @@ export class PromptLoader {
       entries = await readdir(absolutePath);
     } catch (err) {
       console.warn(
-        `[PromptLoader] Could not read directory '${absolutePath}': ${(err as Error).message}`
+        `[PromptLoader] Could not read directory '${absolutePath}': ${(err as Error).message}`,
       );
       return 0;
     }

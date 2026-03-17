@@ -191,13 +191,13 @@ async function executeToolsNode(state: AgentState): Promise<Partial<AgentState>>
 const shouldExecuteTools = createBinaryRouter<AgentState>(
   (state) => state.pendingToolCalls.length > 0 && !state.finalResponse,
   'execute_tools',
-  'call_model'
+  'call_model',
 );
 
 const shouldContinue = createEndRouter<AgentState>(
   (state) => !!state.finalResponse || state.iterationCount >= state.maxIterations,
   'route_tools',
-  END
+  END,
 );
 
 // --- Build Graph ---

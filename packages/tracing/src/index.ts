@@ -73,7 +73,7 @@ export async function createTracingConfig(
     dir?: string;
     /** Logger passed to the selected backend.  Defaults to `console`. */
     logger?: Logger;
-  } = {}
+  } = {},
 ): Promise<TracingConfig> {
   const log: Logger = options.logger ?? console;
   const publicKey = process.env['LANGFUSE_PUBLIC_KEY'];
@@ -86,7 +86,7 @@ export async function createTracingConfig(
         secretKey,
         baseUrl: process.env['LANGFUSE_BASE_URL'],
       },
-      log
+      log,
     );
 
     // Wait for the optional langfuse package to load before returning
