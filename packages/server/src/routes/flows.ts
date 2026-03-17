@@ -5,11 +5,13 @@
  * in the `.flows/` directory at the project root.
  *
  * Endpoints:
- *   POST   /api/flows        → create a new flow
- *   GET    /api/flows        → list all flows
- *   GET    /api/flows/:id    → get a single flow by ID
- *   PUT    /api/flows/:id    → update an existing flow
- *   DELETE /api/flows/:id    → delete a flow
+ *   POST   /api/flows             → create a new flow
+ *   GET    /api/flows             → list all flows
+ *   GET    /api/flows/:id         → get a single flow by ID
+ *   PUT    /api/flows/:id         → update an existing flow
+ *   DELETE /api/flows/:id         → delete a flow
+ *   GET    /api/flows/:id/export  → export a flow as a self-contained JSON document
+ *   POST   /api/flows/import      → import a flow from an exported JSON document
  */
 
 import { Router, type Request, type Response } from 'express';
@@ -20,6 +22,7 @@ import {
   updateFlow,
   deleteFlow,
 } from '../services/flow-storage.js';
+import { flowSerializer } from '../services/flow-serializer.js';
 
 const router: Router = Router();
 
@@ -64,6 +67,36 @@ router.get('/', (_req: Request, res: Response): void => {
     console.error('[GET /api/flows]', err);
     res.status(500).json({ error: 'Failed to list flows' });
   }
+});
+
+// ─── POST /import — import a flow ────────────────────────────────────────────
+
+router.post('/import', (req: Request, res: Response): void => {
+  try {
+    const result = flowSerializer.importFlow(req.body);
+    res.status(201).json(result);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Import failed';
+    res.status(400).json({ error: message });
+  }
+});
+
+// ─── GET /:id/export — export a flow ─────────────────────────────────────────
+
+router.get('/:id/export', (req: Request, res: Response): void => {
+  const flowId = String(req.params['id'] ?? '');
+  if (!flowId) {
+    res.status(400).json({ error: 'Flow ID is required' });
+    return;
+  }
+
+  const exported = flowSerializer.exportFlow(flowId);
+  if (!exported) {
+    res.status(404).json({ error: `Flow "${flowId}" not found` });
+    return;
+  }
+
+  res.json(exported);
 });
 
 // ─── GET /:id — get a single flow ─────────────────────────────────────────────
