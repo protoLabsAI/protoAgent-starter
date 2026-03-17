@@ -6,9 +6,12 @@
  *   Inspector — shown when a node is selected; edit its properties
  */
 
+import { useState } from 'react';
 import type { Node } from '@xyflow/react';
 import { NODE_SPECS } from './nodes.js';
 import type { FlowNodeData, NodeKind } from './nodes.js';
+import { useTools } from '../../hooks/use-tools.js';
+import type { ApiTool } from '../../hooks/use-tools.js';
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
@@ -49,6 +52,8 @@ export function FlowSidebar({ selectedNode, onNodeDataChange, onDeleteNode }: Fl
 // ── Node palette ──────────────────────────────────────────────────────────────
 
 function Palette() {
+  const { tools, loading, error } = useTools();
+
   const onDragStart = (event: React.DragEvent<HTMLDivElement>, kind: NodeKind) => {
     event.dataTransfer.setData('application/flow-node-kind', kind);
     event.dataTransfer.effectAllowed = 'move';
@@ -98,6 +103,9 @@ function Palette() {
           </div>
         ))}
 
+        {/* Tool palette section */}
+        <ToolPalette tools={tools} loading={loading} error={error} />
+
         <div
           style={{
             marginTop: 16,
@@ -119,6 +127,155 @@ function Palette() {
         </div>
       </div>
     </>
+  );
+}
+
+// ── Tool palette section ──────────────────────────────────────────────────────
+
+interface ToolPaletteProps {
+  tools: ApiTool[];
+  loading: boolean;
+  error: string | null;
+}
+
+function ToolPalette({ tools, loading, error }: ToolPaletteProps) {
+  const toolSpec = NODE_SPECS.find((s) => s.kind === 'tool')!;
+
+  const onDragStart = (event: React.DragEvent<HTMLDivElement>, tool: ApiTool) => {
+    event.dataTransfer.setData('application/flow-node-kind', 'tool');
+    event.dataTransfer.setData('application/flow-tool-name', tool.name);
+    event.dataTransfer.effectAllowed = 'move';
+  };
+
+  return (
+    <div style={{ marginTop: 12 }}>
+      <div
+        style={{
+          fontSize: 10,
+          fontWeight: 700,
+          color: 'var(--text-muted)',
+          textTransform: 'uppercase',
+          letterSpacing: '0.06em',
+          marginBottom: 6,
+          paddingLeft: 2,
+        }}
+      >
+        Available Tools
+      </div>
+
+      {loading && (
+        <div
+          style={{
+            fontSize: 11,
+            color: 'var(--text-muted)',
+            padding: '6px 4px',
+            fontStyle: 'italic',
+          }}
+        >
+          Loading tools…
+        </div>
+      )}
+
+      {error && (
+        <div
+          style={{
+            fontSize: 11,
+            color: '#ef4444',
+            padding: '6px 8px',
+            background: 'rgba(239,68,68,0.08)',
+            borderRadius: 6,
+            border: '1px solid rgba(239,68,68,0.2)',
+          }}
+        >
+          {error}
+        </div>
+      )}
+
+      {!loading && !error && tools.length === 0 && (
+        <div
+          style={{
+            fontSize: 11,
+            color: 'var(--text-muted)',
+            padding: '6px 4px',
+            fontStyle: 'italic',
+          }}
+        >
+          No tools registered
+        </div>
+      )}
+
+      {tools.map((tool) => (
+        <div
+          key={tool.name}
+          draggable
+          onDragStart={(e) => onDragStart(e, tool)}
+          style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: 8,
+            padding: '7px 8px',
+            marginBottom: 5,
+            borderRadius: 7,
+            border: `1px solid ${toolSpec.accent}33`,
+            background: toolSpec.bg,
+            cursor: 'grab',
+            userSelect: 'none',
+            transition: 'transform 0.1s, box-shadow 0.1s',
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLDivElement).style.transform = 'translateX(2px)';
+            (e.currentTarget as HTMLDivElement).style.boxShadow = `0 2px 8px ${toolSpec.accent}22`;
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLDivElement).style.transform = '';
+            (e.currentTarget as HTMLDivElement).style.boxShadow = '';
+          }}
+        >
+          <span style={{ fontSize: 14, flexShrink: 0 }}>🔧</span>
+          <div style={{ minWidth: 0 }}>
+            <div
+              style={{
+                fontWeight: 700,
+                fontSize: 11,
+                color: toolSpec.accent,
+                fontFamily: 'var(--font-mono, monospace)',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {tool.name}
+            </div>
+            {tool.metadata?.category && (
+              <div
+                style={{
+                  fontSize: 10,
+                  color: 'var(--text-muted)',
+                  marginTop: 1,
+                  fontStyle: 'italic',
+                }}
+              >
+                {tool.metadata.category}
+              </div>
+            )}
+            <div
+              style={{
+                fontSize: 10,
+                color: 'var(--text-muted)',
+                lineHeight: 1.4,
+                marginTop: 1,
+                overflow: 'hidden',
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+              }}
+            >
+              {tool.description}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -175,15 +332,7 @@ function Inspector({ node, onChange, onDelete }: InspectorProps) {
         )}
 
         {data.kind === 'tool' && (
-          <Field label="Tool function name">
-            <input
-              type="text"
-              value={data.toolName ?? ''}
-              onChange={(e) => onChange({ toolName: e.target.value })}
-              style={inputStyle}
-              placeholder="myTool"
-            />
-          </Field>
+          <ToolInspectorFields data={data} onChange={onChange} />
         )}
 
         {data.kind === 'condition' && (
@@ -231,6 +380,223 @@ function Inspector({ node, onChange, onDelete }: InspectorProps) {
         </button>
       </div>
     </>
+  );
+}
+
+// ── Tool inspector fields ─────────────────────────────────────────────────────
+
+interface ToolInspectorFieldsProps {
+  data: FlowNodeData;
+  onChange: (patch: Partial<FlowNodeData>) => void;
+}
+
+function ToolInspectorFields({ data, onChange }: ToolInspectorFieldsProps) {
+  const { tools, loading } = useTools();
+  const [showPicker, setShowPicker] = useState(!data.toolName);
+
+  // Find the currently selected tool
+  const selectedTool = tools.find((t) => t.name === data.toolName) ?? null;
+
+  const handleSelectTool = (tool: ApiTool) => {
+    onChange({ toolName: tool.name, label: tool.name });
+    setShowPicker(false);
+  };
+
+  return (
+    <>
+      <Field label="Tool function name">
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          <input
+            type="text"
+            value={data.toolName ?? ''}
+            onChange={(e) => onChange({ toolName: e.target.value })}
+            style={{ ...inputStyle, flex: 1 }}
+            placeholder="myTool"
+          />
+          <button
+            type="button"
+            onClick={() => setShowPicker((v) => !v)}
+            title="Pick from registered tools"
+            style={{
+              flexShrink: 0,
+              padding: '4px 8px',
+              background: 'var(--surface-2)',
+              border: '1px solid var(--border)',
+              borderRadius: 5,
+              color: 'var(--text-secondary)',
+              cursor: 'pointer',
+              fontSize: 11,
+              fontWeight: 600,
+            }}
+          >
+            Browse
+          </button>
+        </div>
+      </Field>
+
+      {/* Tool picker — shown when no tool selected or Browse clicked */}
+      {showPicker && (
+        <div
+          style={{
+            marginBottom: 10,
+            border: '1px solid var(--border)',
+            borderRadius: 7,
+            overflow: 'hidden',
+            maxHeight: 200,
+            overflowY: 'auto',
+          }}
+        >
+          {loading && (
+            <div style={{ padding: '8px 10px', fontSize: 11, color: 'var(--text-muted)', fontStyle: 'italic' }}>
+              Loading tools…
+            </div>
+          )}
+          {!loading && tools.length === 0 && (
+            <div style={{ padding: '8px 10px', fontSize: 11, color: 'var(--text-muted)', fontStyle: 'italic' }}>
+              No tools registered
+            </div>
+          )}
+          {tools.map((tool) => (
+            <button
+              key={tool.name}
+              type="button"
+              onClick={() => handleSelectTool(tool)}
+              style={{
+                display: 'block',
+                width: '100%',
+                textAlign: 'left',
+                padding: '7px 10px',
+                background: tool.name === data.toolName ? 'rgba(249,115,22,0.12)' : 'transparent',
+                border: 'none',
+                borderBottom: '1px solid var(--border)',
+                cursor: 'pointer',
+                fontSize: 11,
+                color: 'var(--foreground)',
+              }}
+            >
+              <div
+                style={{
+                  fontWeight: 700,
+                  fontFamily: 'var(--font-mono, monospace)',
+                  color: '#f97316',
+                  fontSize: 11,
+                }}
+              >
+                {tool.name}
+              </div>
+              {tool.metadata?.category && (
+                <div style={{ fontSize: 10, color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                  {tool.metadata.category}
+                </div>
+              )}
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 1 }}>
+                {tool.description}
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Selected tool schema display */}
+      {selectedTool && !showPicker && (
+        <ToolSchemaView tool={selectedTool} />
+      )}
+    </>
+  );
+}
+
+// ── Tool schema viewer ────────────────────────────────────────────────────────
+
+function ToolSchemaView({ tool }: { tool: ApiTool }) {
+  return (
+    <div style={{ marginBottom: 10 }}>
+      {/* Category badge */}
+      {tool.metadata?.category && (
+        <div style={{ marginBottom: 6 }}>
+          <span
+            style={{
+              display: 'inline-block',
+              padding: '1px 7px',
+              background: 'rgba(249,115,22,0.15)',
+              border: '1px solid rgba(249,115,22,0.3)',
+              borderRadius: 10,
+              fontSize: 10,
+              color: '#f97316',
+              fontWeight: 600,
+            }}
+          >
+            {tool.metadata.category}
+          </span>
+        </div>
+      )}
+
+      {/* Input schema */}
+      <div
+        style={{
+          fontSize: 10,
+          fontWeight: 700,
+          color: 'var(--text-secondary)',
+          textTransform: 'uppercase',
+          letterSpacing: '0.04em',
+          marginBottom: 4,
+        }}
+      >
+        Input Schema
+      </div>
+      <pre
+        style={{
+          margin: 0,
+          padding: '6px 8px',
+          background: 'var(--surface-2)',
+          border: '1px solid var(--border)',
+          borderRadius: 5,
+          fontSize: 9,
+          color: 'var(--text-muted)',
+          fontFamily: 'var(--font-mono, monospace)',
+          overflowX: 'auto',
+          whiteSpace: 'pre-wrap',
+          wordBreak: 'break-all',
+          maxHeight: 120,
+          overflowY: 'auto',
+          marginBottom: 6,
+        }}
+      >
+        {JSON.stringify(tool.inputSchema, null, 2)}
+      </pre>
+
+      {/* Output schema */}
+      <div
+        style={{
+          fontSize: 10,
+          fontWeight: 700,
+          color: 'var(--text-secondary)',
+          textTransform: 'uppercase',
+          letterSpacing: '0.04em',
+          marginBottom: 4,
+        }}
+      >
+        Output Schema
+      </div>
+      <pre
+        style={{
+          margin: 0,
+          padding: '6px 8px',
+          background: 'var(--surface-2)',
+          border: '1px solid var(--border)',
+          borderRadius: 5,
+          fontSize: 9,
+          color: 'var(--text-muted)',
+          fontFamily: 'var(--font-mono, monospace)',
+          overflowX: 'auto',
+          whiteSpace: 'pre-wrap',
+          wordBreak: 'break-all',
+          maxHeight: 120,
+          overflowY: 'auto',
+        }}
+      >
+        {JSON.stringify(tool.outputSchema, null, 2)}
+      </pre>
+    </div>
   );
 }
 
