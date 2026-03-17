@@ -25,6 +25,7 @@
 import { Router, type Request, type Response } from 'express';
 import fs from 'node:fs';
 import path from 'node:path';
+import { writePrompt } from '../services/prompt-writer.js';
 
 const router: Router = Router();
 
@@ -218,25 +219,37 @@ router.put('/:role', (req: Request, res: Response): void => {
     return;
   }
 
-  const { content } = req.body as { content?: unknown };
-  if (typeof content !== 'string') {
-    res.status(400).json({ error: '"content" must be a string' });
-    return;
-  }
-
   const filepath = path.join(PROMPTS_DIR, `${id}.md`);
   if (!fs.existsSync(filepath)) {
     res.status(404).json({ error: `Prompt "${id}" not found` });
     return;
   }
 
-  try {
-    // Preserve the frontmatter and overwrite only the body
-    const raw = fs.readFileSync(filepath, 'utf-8');
-    const frontmatterMatch = raw.match(/^(---\r?\n[\s\S]*?\r?\n---\r?\n?)/);
-    const frontmatter = frontmatterMatch ? frontmatterMatch[1] : '';
-    fs.writeFileSync(filepath, frontmatter + content, 'utf-8');
+  const { content, name, version } = req.body as {
+    content?: unknown;
+    name?: unknown;
+    version?: unknown;
+  };
+  if (typeof content !== 'string') {
+    res.status(400).json({ error: '"content" must be a string' });
+    return;
+  }
 
+  try {
+    // Load existing prompt to obtain current name/version as defaults
+    const existing = loadPrompt(id);
+    const resolvedName = typeof name === 'string' && name ? name : (existing?.name ?? id);
+    const resolvedVersion =
+      typeof version === 'string' && version ? version : (existing?.version ?? '1.0.0');
+
+    writePrompt({
+      role: id,
+      name: resolvedName,
+      version: resolvedVersion,
+      template: content,
+    });
+
+    // PromptRegistry reloads on next read — loadPrompt reads fresh from disk
     const updated = loadPrompt(id);
     res.json(updated);
   } catch (err) {
@@ -248,11 +261,10 @@ router.put('/:role', (req: Request, res: Response): void => {
 // ─── POST / — create a new prompt ─────────────────────────────────────────────
 
 router.post('/', (req: Request, res: Response): void => {
-  const { id, name, description, variables, content } = req.body as {
+  const { id, name, version, content } = req.body as {
     id?: string;
     name?: string;
-    description?: string;
-    variables?: string[];
+    version?: string;
     content?: string;
   };
 
@@ -275,23 +287,19 @@ router.post('/', (req: Request, res: Response): void => {
     return;
   }
 
-  // Ensure prompts directory exists
-  if (!fs.existsSync(PROMPTS_DIR)) {
-    fs.mkdirSync(PROMPTS_DIR, { recursive: true });
-  }
-
-  // Build frontmatter
-  const fmName = name ?? safeId;
-  const fmDesc = description ?? '';
-  const fmVars =
-    Array.isArray(variables) && variables.length > 0
-      ? `\nvariables:\n${variables.map((v) => `  - ${v}`).join('\n')}`
-      : '';
-  const frontmatter = `---\nname: ${fmName}\ndescription: ${fmDesc}${fmVars}\n---\n`;
+  const resolvedName = typeof name === 'string' && name ? name : safeId;
+  const resolvedVersion = typeof version === 'string' && version ? version : '1.0.0';
   const body = typeof content === 'string' ? content : '';
 
   try {
-    fs.writeFileSync(filepath, frontmatter + body, 'utf-8');
+    writePrompt({
+      role: safeId,
+      name: resolvedName,
+      version: resolvedVersion,
+      template: body,
+    });
+
+    // PromptRegistry reloads on next read — loadPrompt reads fresh from disk
     const created = loadPrompt(safeId);
     res.status(201).json(created);
   } catch (err) {
