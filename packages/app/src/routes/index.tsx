@@ -5,11 +5,15 @@
  *   - useChatSession hook with DefaultChatTransport (model in headers)
  *   - ChatMessageList for message rendering with tool progress
  *   - ChatInput with PromptInputProvider for auto-resizing input
- *   - Role selector and model switcher in header bar
+ *   - Role selector, flow selector, and model switcher in header bar
+ *
+ * Flow selector: selecting a flow configures the chat with that flow's system
+ * prompt and tools (stored in flow.metadata.systemPrompt / flow.metadata.tools).
+ * Switching flows automatically starts a new session.
  */
 
 import { createFileRoute } from '@tanstack/react-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { UIMessage } from 'ai';
 
 import { ChatMessageList, ChatInput, PromptInputProvider } from 'proto-agent-ui';
@@ -17,6 +21,7 @@ import 'proto-agent-ui/tool-results/weather-card.js';
 
 import { useChatSession } from '../hooks/use-chat-session.js';
 import { useToolProgress } from '../hooks/use-tool-progress.js';
+import { FlowSelector, useFlowConfig } from '../components/flow-selector.js';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -62,11 +67,34 @@ function ChatPage() {
 
   const selectedRole = roles.find((r) => r.id === selectedRoleId);
 
+  // ── Flow state ───────────────────────────────────────────────────────────
+  const [selectedFlowId, setSelectedFlowId] = useState<string>('');
+  const flowConfig = useFlowConfig(selectedFlowId);
+
+  // ── Resolve active system prompt ─────────────────────────────────────────
+  // Flow takes precedence over role when a flow is selected.
+  const activeSystem = selectedFlowId
+    ? (flowConfig.systemPrompt ?? selectedRole?.systemPrompt)
+    : selectedRole?.systemPrompt;
+
   // ── Chat state (production Ava pattern) ─────────────────────────────────
   const { messages, sendMessage, stop, isStreaming, modelAlias, handleNewChat, handleModelChange } =
     useChatSession({
-      system: selectedRole?.systemPrompt,
+      system: activeSystem,
+      flowId: selectedFlowId || undefined,
     });
+
+  // ── Start a new session when the selected flow changes ───────────────────
+  // Skip on the very first render; after that any change to selectedFlowId
+  // (selecting, switching, or deselecting a flow) starts a fresh session.
+  const isInitialMountRef = useRef(true);
+  useEffect(() => {
+    if (isInitialMountRef.current) {
+      isInitialMountRef.current = false;
+      return;
+    }
+    handleNewChat();
+  }, [selectedFlowId, handleNewChat]);
 
   // ── Tool progress from WebSocket sideband ─────────────────────────────────
   const { getProgressByToolName } = useToolProgress();
@@ -124,6 +152,10 @@ function ChatPage() {
       <div className="flex h-full flex-col overflow-hidden">
         {/* ── Header bar ─────────────────────────────────────────────── */}
         <div className="flex shrink-0 items-center gap-3 border-b border-border bg-card px-3 py-2">
+          {/* Flow selector — takes precedence over role when selected */}
+          <FlowSelector selectedFlowId={selectedFlowId} onChange={setSelectedFlowId} />
+
+          {/* Role selector — simpler alternative when no flow is chosen */}
           {roles.length > 0 && (
             <select
               value={selectedRoleId}
@@ -149,6 +181,13 @@ function ChatPage() {
               </option>
             ))}
           </select>
+
+          {/* Active flow badge */}
+          {flowConfig.name && (
+            <span className="rounded bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+              {flowConfig.name}
+            </span>
+          )}
 
           <span className="text-[11px] text-muted-foreground">{currentModelLabel}</span>
 

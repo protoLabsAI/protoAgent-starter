@@ -42,6 +42,7 @@ import { traceStore } from '../tracing/trace-store.js';
 import { buildTrace, type StepData } from '../tracing/build-trace.js';
 import { getCommand, parseSlashCommand } from '../commands/registry.js';
 import { toolProgress } from '../tools/progress.js';
+import { getFlow } from '../services/flow-storage.js';
 
 // Side-effect import: registers all built-in commands into the registry
 import '../commands/example.js';
@@ -172,6 +173,13 @@ const get_weather = tool({
   },
 });
 
+// ─── All registered tools ─────────────────────────────────────────────────────
+
+const ALL_TOOLS = {
+  getCurrentTime,
+  get_weather,
+} as const;
+
 // ─── Request schema ───────────────────────────────────────────────────────────
 
 interface ChatRequestBody {
@@ -179,12 +187,16 @@ interface ChatRequestBody {
   model?: string;
   system?: string;
   maxSteps?: number;
+  /** Optional flow ID — if provided the server looks up the flow and applies
+   *  its metadata.systemPrompt (when no explicit system is passed) and
+   *  metadata.tools (to restrict which tools are active for this session). */
+  flowId?: string;
 }
 
 // ─── POST / ───────────────────────────────────────────────────────────────────
 
 router.post('/', async (req: Request, res: Response): Promise<void> => {
-  const { messages, model: bodyModel, system, maxSteps = 5 } = req.body as ChatRequestBody;
+  const { messages, model: bodyModel, system, maxSteps = 5, flowId } = req.body as ChatRequestBody;
 
   // Validate required fields
   if (!Array.isArray(messages) || messages.length === 0) {
@@ -204,9 +216,41 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
   // 1. ANTHROPIC_API_KEY env var → 2. Claude CLI OAuth token (file) → 3. macOS Keychain
   const provider = getAnthropicProvider();
 
+  // ── Flow configuration ──────────────────────────────────────────────────────
+  // When a flowId is supplied look up the flow and apply its metadata:
+  //   metadata.systemPrompt — used when no explicit system prompt is in the request
+  //   metadata.tools        — string[] restricting which tools are active
+  let activeTools: typeof ALL_TOOLS | Partial<typeof ALL_TOOLS> = ALL_TOOLS;
+
+  let resolvedSystem = system;
+  if (flowId) {
+    try {
+      const flow = getFlow(flowId);
+      if (flow) {
+        const meta = flow.metadata ?? {};
+
+        // Apply flow system prompt when the client didn't send one explicitly.
+        if (!resolvedSystem && typeof meta['systemPrompt'] === 'string') {
+          resolvedSystem = meta['systemPrompt'] as string;
+        }
+
+        // Restrict tools to those listed in metadata.tools (if present).
+        if (Array.isArray(meta['tools']) && (meta['tools'] as unknown[]).length > 0) {
+          const allowedNames = new Set<string>(
+            (meta['tools'] as unknown[]).filter((t): t is string => typeof t === 'string'),
+          );
+          activeTools = Object.fromEntries(
+            Object.entries(ALL_TOOLS).filter(([name]) => allowedNames.has(name)),
+          ) as Partial<typeof ALL_TOOLS>;
+        }
+      }
+    } catch {
+      // Non-fatal: if flow lookup fails fall back to defaults.
+    }
+  }
+
   // ── Slash-command expansion ─────────────────────────────────────────────────
   // UIMessages use `parts` array, not `content` string
-  let resolvedSystem = system;
   const lastUserMessage = [...messages].reverse().find((m) => m.role === 'user');
   const lastUserText =
     lastUserMessage?.parts
@@ -226,10 +270,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
   // Convert UIMessages (parts array) to ModelMessages (content string) for streamText
   // Production Ava uses the same pattern — must await and pass tools for tool result conversion
   const modelMessages = await convertToModelMessages(messages, {
-    tools: {
-      getCurrentTime,
-      get_weather,
-    },
+    tools: ALL_TOOLS,
   });
 
   // Trace bookkeeping
@@ -245,10 +286,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
           system: resolvedSystem,
           messages: modelMessages,
 
-          tools: {
-            getCurrentTime,
-            get_weather,
-          },
+          tools: activeTools,
 
           stopWhen: stepCountIs(Math.max(1, maxSteps)),
 

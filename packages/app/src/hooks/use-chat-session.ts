@@ -24,18 +24,23 @@ interface UseChatSessionOptions {
   apiUrl?: string;
   /** System prompt override (e.g. from role selection). */
   system?: string;
+  /** Optional flow ID — sent to the server so it can apply the flow's tool
+   *  configuration (metadata.tools) for this session. */
+  flowId?: string;
 }
 
 export function useChatSession({
   defaultModel = DEFAULT_MODEL,
   apiUrl = CHAT_API_URL,
   system,
+  flowId,
 }: UseChatSessionOptions = {}) {
   const [modelAlias, setModelAlias] = useState(defaultModel);
 
   // Build transport matching the production Ava pattern:
   // - Model alias in headers (not body) so the server reads it consistently
   // - System prompt in body when a role is selected
+  // - flowId in body so the server can apply the flow's tool configuration
   const transport = useMemo(
     () =>
       new DefaultChatTransport({
@@ -45,9 +50,10 @@ export function useChatSession({
         },
         body: {
           ...(system ? { system } : {}),
+          ...(flowId ? { flowId } : {}),
         },
       }),
-    [apiUrl, modelAlias, system],
+    [apiUrl, modelAlias, system, flowId],
   );
 
   const { messages, sendMessage, stop, status, setMessages, error } = useChat({
