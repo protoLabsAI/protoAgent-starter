@@ -7,18 +7,19 @@
  *   ---
  *   name: My Prompt
  *   description: A short description shown in the UI.
+ *   version: 1.0.0
  *   variables:
  *     - topic
  *     - audience
  *   ---
  *   You are a helpful assistant. Write about {{topic}} for {{audience}}.
  *
- * The `id` field is derived from the filename (without the `.md` extension).
+ * The `role` field is derived from the filename (without the `.md` extension).
  *
  * Endpoints:
- *   GET /api/prompts        → list all prompt templates (sorted by name)
- *   GET /api/prompts/:id    → get a single prompt by ID
- *   PUT /api/prompts/:id    → save updated content to the filesystem
+ *   GET /api/prompts          → list all prompt templates (sorted by name)
+ *   GET /api/prompts/:role    → get a single prompt by role
+ *   PUT /api/prompts/:role    → save updated content to the filesystem
  */
 
 import { Router, type Request, type Response } from 'express';
@@ -33,20 +34,28 @@ const PROMPTS_DIR = path.join(process.cwd(), 'prompts');
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export interface PromptFile {
-  /** Filename without the `.md` extension. Used as the URL-safe identifier. */
-  id: string;
-  /** Human-readable display name (from frontmatter `name:` field). */
-  name: string;
+export interface PromptMetadata {
   /** Short description shown in the sidebar (from frontmatter `description:`). */
   description: string;
+  [key: string]: unknown;
+}
+
+export interface PromptFile {
+  /** Filename without the `.md` extension. Used as the URL-safe role identifier. */
+  role: string;
+  /** Human-readable display name (from frontmatter `name:` field). */
+  name: string;
+  /** Semantic version string (from frontmatter `version:` field; defaults to "1.0.0"). */
+  version: string;
+  /** The prompt body — everything after the closing `---` frontmatter delimiter. */
+  template: string;
   /**
    * Variable placeholder names extracted from the template.
    * Includes both frontmatter-declared variables and inline `{{name}}` patterns.
    */
   variables: string[];
-  /** The prompt body — everything after the closing `---` frontmatter delimiter. */
-  content: string;
+  /** Additional metadata derived from frontmatter fields. */
+  metadata: PromptMetadata;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -64,24 +73,27 @@ export interface PromptFile {
 function parseFrontmatter(raw: string): {
   name: string;
   description: string;
+  version: string;
   variables: string[];
   body: string;
 } {
   const match = raw.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/);
   if (!match) {
-    return { name: '', description: '', variables: [], body: raw };
+    return { name: '', description: '', version: '1.0.0', variables: [], body: raw };
   }
 
   const [, frontmatter = '', body = ''] = match;
 
   let name = '';
   let description = '';
+  let version = '1.0.0';
   const variables: string[] = [];
   let inVariables = false;
 
   for (const line of frontmatter.split('\n')) {
     const nameLine = line.match(/^name:\s*(.+)$/);
     const descLine = line.match(/^description:\s*(.+)$/);
+    const versionLine = line.match(/^version:\s*(.+)$/);
     const varItem = line.match(/^  - (.+)$/);
     const varListLine = line.match(/^variables:\s*$/);
 
@@ -90,6 +102,9 @@ function parseFrontmatter(raw: string): {
       inVariables = false;
     } else if (descLine) {
       description = descLine[1]!.trim();
+      inVariables = false;
+    } else if (versionLine) {
+      version = versionLine[1]!.trim();
       inVariables = false;
     } else if (varListLine) {
       inVariables = true;
@@ -101,7 +116,7 @@ function parseFrontmatter(raw: string): {
     }
   }
 
-  return { name, description, variables, body: body.trimStart() };
+  return { name, description, version, variables, body: body.trimStart() };
 }
 
 /**
@@ -127,18 +142,19 @@ function loadPrompt(id: string): PromptFile | null {
 
   try {
     const raw = fs.readFileSync(filepath, 'utf-8');
-    const { name, description, variables: fmVars, body } = parseFrontmatter(raw);
+    const { name, description, version, variables: fmVars, body } = parseFrontmatter(raw);
 
     // Merge frontmatter-declared vars with inline {{var}} patterns
     const inlineVars = extractInlineVariables(body);
     const allVars = Array.from(new Set([...fmVars, ...inlineVars]));
 
     return {
-      id,
+      role: id,
       name: name || id,
-      description: description || '',
+      version,
+      template: body,
       variables: allVars,
-      content: body,
+      metadata: { description: description || '' },
     };
   } catch {
     return null;
@@ -175,12 +191,12 @@ router.get('/', (_req: Request, res: Response): void => {
   res.json(listPrompts());
 });
 
-// ─── GET /:id — get a single prompt ──────────────────────────────────────────
+// ─── GET /:role — get a single prompt ────────────────────────────────────────
 
-router.get('/:id', (req: Request, res: Response): void => {
-  const id = sanitiseId(String(req.params['id'] ?? ''));
+router.get('/:role', (req: Request, res: Response): void => {
+  const id = sanitiseId(String(req.params['role'] ?? ''));
   if (!id) {
-    res.status(400).json({ error: 'Invalid prompt ID' });
+    res.status(400).json({ error: 'Invalid prompt role' });
     return;
   }
 
@@ -193,12 +209,12 @@ router.get('/:id', (req: Request, res: Response): void => {
   res.json(prompt);
 });
 
-// ─── PUT /:id — save updated content ─────────────────────────────────────────
+// ─── PUT /:role — save updated content ───────────────────────────────────────
 
-router.put('/:id', (req: Request, res: Response): void => {
-  const id = sanitiseId(String(req.params['id'] ?? ''));
+router.put('/:role', (req: Request, res: Response): void => {
+  const id = sanitiseId(String(req.params['role'] ?? ''));
   if (!id) {
-    res.status(400).json({ error: 'Invalid prompt ID' });
+    res.status(400).json({ error: 'Invalid prompt role' });
     return;
   }
 
@@ -284,12 +300,12 @@ router.post('/', (req: Request, res: Response): void => {
   }
 });
 
-// ─── DELETE /:id — delete a prompt ────────────────────────────────────────────
+// ─── DELETE /:role — delete a prompt ─────────────────────────────────────────
 
-router.delete('/:id', (req: Request, res: Response): void => {
-  const id = sanitiseId(String(req.params['id'] ?? ''));
+router.delete('/:role', (req: Request, res: Response): void => {
+  const id = sanitiseId(String(req.params['role'] ?? ''));
   if (!id) {
-    res.status(400).json({ error: 'Invalid prompt ID' });
+    res.status(400).json({ error: 'Invalid prompt role' });
     return;
   }
 
@@ -301,7 +317,7 @@ router.delete('/:id', (req: Request, res: Response): void => {
 
   try {
     fs.unlinkSync(filepath);
-    res.json({ deleted: true, id });
+    res.json({ deleted: true, role: id });
   } catch (err) {
     console.error(`[DELETE /api/prompts/${id}]`, err);
     res.status(500).json({ error: 'Failed to delete prompt' });
