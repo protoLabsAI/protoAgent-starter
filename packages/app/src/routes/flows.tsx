@@ -22,6 +22,7 @@ import { FlowCanvas } from '../components/flow-builder/canvas.js';
 import { FlowSidebar } from '../components/flow-builder/sidebar.js';
 import { generateLangGraphCode, graphToJson } from '../components/flow-builder/codegen.js';
 import type { FlowNodeData } from '../components/flow-builder/nodes.js';
+import { ASSISTANT_FLOW_NODES, ASSISTANT_FLOW_EDGES } from '../components/flow-builder/default-flows.js';
 
 // ── Route definition ──────────────────────────────────────────────────────────
 
@@ -33,39 +34,33 @@ export const Route = createFileRoute('/flows')({
 
 const STORAGE_KEY = 'flow-builder-v1';
 
-// ── Default starter graph ─────────────────────────────────────────────────────
+// ── Initial graph — load saved flow or fall back to the Assistant default ─────
 
-const DEFAULT_NODES: Node<FlowNodeData>[] = [
-  {
-    id: 'agent-1',
-    type: 'agent',
-    position: { x: 200, y: 100 },
-    data: { kind: 'agent', label: 'LLM Agent', model: 'claude-3-5-haiku-20241022' },
-  },
-  {
-    id: 'tool-1',
-    type: 'tool',
-    position: { x: 80, y: 260 },
-    data: { kind: 'tool', label: 'Search', toolName: 'webSearch' },
-  },
-  {
-    id: 'condition-1',
-    type: 'condition',
-    position: { x: 310, y: 260 },
-    data: { kind: 'condition', label: 'Done?', condition: 'Check if task is complete' },
-  },
-];
-
-const DEFAULT_EDGES: Edge[] = [
-  { id: 'e1', source: 'agent-1', target: 'tool-1', animated: true },
-  { id: 'e2', source: 'agent-1', target: 'condition-1', animated: true },
-];
+function loadInitialGraph(): { nodes: Node<FlowNodeData>[]; edges: Edge[] } {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (raw) {
+    try {
+      const json = JSON.parse(raw) as { nodes?: Node<FlowNodeData>[]; edges?: Edge[] };
+      if (Array.isArray(json.nodes) && json.nodes.length > 0) {
+        return {
+          nodes: json.nodes,
+          edges: Array.isArray(json.edges) ? json.edges : [],
+        };
+      }
+    } catch {
+      // ignore malformed data — fall through to default
+    }
+  }
+  // First visit or empty storage: load the default Assistant flow
+  return { nodes: ASSISTANT_FLOW_NODES, edges: ASSISTANT_FLOW_EDGES };
+}
 
 // ── FlowsPage (inner) ─────────────────────────────────────────────────────────
 
 function FlowsPageInner() {
-  const [nodes, setNodes, onNodesChange] = useNodesState<Node<FlowNodeData>>(DEFAULT_NODES);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(DEFAULT_EDGES);
+  const initial = loadInitialGraph();
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node<FlowNodeData>>(initial.nodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(initial.edges);
   const [selectedNode, setSelectedNode] = useState<Node<FlowNodeData> | null>(null);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saved' | 'loaded'>('idle');
 
