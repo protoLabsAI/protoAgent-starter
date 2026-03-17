@@ -10,11 +10,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "proto-agent-ui": "workspace:*",
     "@ai-sdk/react": "^3.0.0",
     "@tanstack/react-router": "~1.160.2",
     "@tanstack/router-core": "1.160.0",
-    "@xyflow/react": "^12.3.0",
     "ai": "^6.0.0",
     "lucide-react": "^0.469.0",
     "proto-agent-ui": "workspace:*",
