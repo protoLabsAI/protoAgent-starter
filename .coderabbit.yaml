@@ -1,0 +1,14 @@
+# CodeRabbit Configuration
+# https://docs.coderabbit.ai/configuration/
+
+version: "2"
+
+reviews:
+  profile: "strict"
+  auto_review:
+    enabled: true
+    drafts: false
+  request_changes_workflow: true
+
+chat:
+  auto_reply: true
