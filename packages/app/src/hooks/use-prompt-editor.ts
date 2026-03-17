@@ -35,31 +35,51 @@ export interface PromptFile {
 
 /** Returned by PUT /api/prompts/:role — same as PromptFile but may include commit info */
 export interface SaveResult extends PromptFile {
+  /** Git commit hash from the save operation, if available */
   commitHash?: string;
+  /** Git commit message, if available */
   commitMessage?: string;
 }
 
 export interface UsePromptEditorState {
+  /** The currently loaded prompt (original, unedited) */
   original: PromptFile | null;
+  /** Edited template body */
   body: string;
+  /** Edited name */
   name: string;
+  /** Edited version */
   version: string;
+  /** Edited role (only used when creating a new prompt) */
   role: string;
+  /** True when there are unsaved changes */
   isDirty: boolean;
+  /** True while a save is in progress */
   isSaving: boolean;
+  /** Error message from the last save attempt */
   saveError: string | null;
+  /** Confirmation info from the last successful save */
   saveConfirmation: { message: string; commitHash?: string } | null;
 }
 
 export interface UsePromptEditorActions {
+  /** Load a prompt into the editor, resetting dirty state */
   load: (prompt: PromptFile) => void;
+  /** Reset the editor to a blank state */
   reset: () => void;
+  /** Update the template body */
   setBody: (body: string) => void;
+  /** Update the prompt name */
   setName: (name: string) => void;
+  /** Update the version string */
   setVersion: (version: string) => void;
+  /** Update the role (id) — only meaningful for new prompts */
   setRole: (role: string) => void;
+  /** Save changes via PUT /api/prompts/:role */
   save: () => Promise<PromptFile | null>;
+  /** Create a new prompt via POST /api/prompts */
   create: (id: string, name: string) => Promise<PromptFile | null>;
+  /** Dismiss the save confirmation banner */
   dismissConfirmation: () => void;
 }
 
@@ -81,8 +101,12 @@ const DEFAULT_STATE: UsePromptEditorState = {
 
 export function usePromptEditor(): UsePromptEditorResult {
   const [state, setState] = useState<UsePromptEditorState>(DEFAULT_STATE);
+
+  // Keep a ref to the current state for use in async callbacks
   const stateRef = useRef(state);
   stateRef.current = state;
+
+  // ── Load ─────────────────────────────────────────────────────────────────
 
   const load = useCallback((prompt: PromptFile) => {
     setState({
@@ -98,9 +122,13 @@ export function usePromptEditor(): UsePromptEditorResult {
     });
   }, []);
 
+  // ── Reset ────────────────────────────────────────────────────────────────
+
   const reset = useCallback(() => {
     setState(DEFAULT_STATE);
   }, []);
+
+  // ── Field setters ────────────────────────────────────────────────────────
 
   const setBody = useCallback((body: string) => {
     setState((prev) => ({ ...prev, body, isDirty: true }));
@@ -117,6 +145,8 @@ export function usePromptEditor(): UsePromptEditorResult {
   const setRole = useCallback((role: string) => {
     setState((prev) => ({ ...prev, role, isDirty: true }));
   }, []);
+
+  // ── Save ─────────────────────────────────────────────────────────────────
 
   const save = useCallback(async (): Promise<PromptFile | null> => {
     const current = stateRef.current;
@@ -141,6 +171,7 @@ export function usePromptEditor(): UsePromptEditorResult {
       }
 
       const updated = (await res.json()) as SaveResult;
+
       const confirmMessage = updated.commitHash
         ? `Saved \u2014 commit ${updated.commitHash.slice(0, 7)}`
         : 'Saved successfully';
@@ -151,7 +182,10 @@ export function usePromptEditor(): UsePromptEditorResult {
         isDirty: false,
         isSaving: false,
         saveError: null,
-        saveConfirmation: { message: confirmMessage, commitHash: updated.commitHash },
+        saveConfirmation: {
+          message: confirmMessage,
+          commitHash: updated.commitHash,
+        },
       }));
 
       return updated;
@@ -161,6 +195,8 @@ export function usePromptEditor(): UsePromptEditorResult {
       return null;
     }
   }, []);
+
+  // ── Create ───────────────────────────────────────────────────────────────
 
   const create = useCallback(async (id: string, name: string): Promise<PromptFile | null> => {
     try {
@@ -175,13 +211,16 @@ export function usePromptEditor(): UsePromptEditorResult {
         throw new Error(err.error ?? `Server returned ${res.status}`);
       }
 
-      return (await res.json()) as PromptFile;
+      const created = (await res.json()) as PromptFile;
+      return created;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to create prompt';
       setState((prev) => ({ ...prev, saveError: message }));
       return null;
     }
   }, []);
+
+  // ── Dismiss confirmation ─────────────────────────────────────────────────
 
   const dismissConfirmation = useCallback(() => {
     setState((prev) => ({ ...prev, saveConfirmation: null }));
