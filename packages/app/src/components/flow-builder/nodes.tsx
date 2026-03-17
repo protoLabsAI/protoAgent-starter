@@ -228,8 +228,10 @@ AgentNode.displayName = 'AgentNode';
 
 export const ToolNode = memo(({ data, selected }: NodeProps<FlowNode>) => {
   const spec = NODE_SPECS.find((s) => s.kind === 'tool')!;
+  // Display toolName prominently so it's visible on the canvas
+  const displayLabel = data.toolName ? data.toolName : data.label;
   return (
-    <NodeShell spec={spec} label={data.label} description={data.description} selected={selected}>
+    <NodeShell spec={spec} label={displayLabel} description={data.description} selected={selected}>
       {data.toolName && (
         <div
           style={{
