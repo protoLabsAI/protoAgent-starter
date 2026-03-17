@@ -6,6 +6,7 @@ import tracesRouter from './routes/traces.js';
 import commandsRouter from './routes/commands.js';
 import promptsRouter from './routes/prompts.js';
 import rolesRouter from './routes/roles.js';
+import toolsRouter from './routes/tools.js';
 import { startWebSocketServer } from './ws.js';
 
 // ─── App factory ──────────────────────────────────────────────────────────────
@@ -42,6 +43,7 @@ export function createApp(): express.Application {
   app.use('/api/commands', commandsRouter);
   app.use('/api/prompts', promptsRouter);
   app.use('/api/roles', rolesRouter);
+  app.use('/api/tools', toolsRouter);
 
   return app;
 }
