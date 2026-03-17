@@ -25,6 +25,7 @@
 import { Router, type Request, type Response } from 'express';
 import fs from 'node:fs';
 import path from 'node:path';
+import { getPromptHistory } from '../services/prompt-history.js';
 import { writePrompt } from '../services/prompt-writer.js';
 
 const router: Router = Router();
@@ -190,6 +191,24 @@ function sanitiseId(raw: string): string {
 
 router.get('/', (_req: Request, res: Response): void => {
   res.json(listPrompts());
+});
+
+// ─── GET /:role/history — get last 2 committed versions ──────────────────────
+
+router.get('/:role/history', (req: Request, res: Response): void => {
+  const id = sanitiseId(String(req.params['role'] ?? ''));
+  if (!id) {
+    res.status(400).json({ error: 'Invalid prompt role' });
+    return;
+  }
+
+  try {
+    const versions = getPromptHistory(id, 2);
+    res.json(versions);
+  } catch (err) {
+    console.error(`[GET /api/prompts/${id}/history]`, err);
+    res.status(500).json({ error: 'Failed to retrieve prompt history' });
+  }
 });
 
 // ─── GET /:role — get a single prompt ────────────────────────────────────────
