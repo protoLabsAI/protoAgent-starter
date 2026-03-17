@@ -192,6 +192,40 @@ app.use('/api/tools', toolRouter);
 // POST /api/tools/search_docs { query: '...', limit: 5 }
 ```
 
+## Tools API
+
+The server exposes a built-in endpoint to inspect all registered tools at runtime:
+
+```
+GET /api/tools
+```
+
+The response is a JSON array of tool descriptors, each including the full JSON Schema for `inputSchema` and `outputSchema`:
+
+```json
+[
+  {
+    "name": "search_docs",
+    "description": "Search the documentation for a given query. Returns relevant sections.",
+    "inputSchema": { "type": "object", "properties": { "query": { ... }, "limit": { ... } } },
+    "outputSchema": { "type": "object", "properties": { "results": { ... } } },
+    "metadata": null
+  }
+]
+```
+
+This endpoint is useful for:
+
+- Discovering available tools from the UI or external clients
+- Dynamically populating tool pickers (the visual flow builder uses this)
+- Generating documentation or client SDKs from live schemas
+
+```typescript
+// Fetch all available tools from the client
+const tools = await fetch('/api/tools').then((r) => r.json());
+// [{ name: 'search_docs', description: '...', inputSchema: {...}, outputSchema: {...} }]
+```
+
 ## Tool profiles
 
 Tool profiles control which tools are available in which context. The server defines three profiles:

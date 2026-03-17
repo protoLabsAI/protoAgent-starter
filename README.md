@@ -219,6 +219,16 @@ export const sendEmailTool = Object.assign(
 
 The server's `toolRequiresConfirmation(name)` check will gate this tool before execution.
 
+### Tools API
+
+The server exposes all registered tools at runtime via a built-in endpoint:
+
+```
+GET /api/tools  →  [{ name, description, inputSchema, outputSchema, metadata }]
+```
+
+Use it to inspect available tools from the client, power the visual flow builder's tool picker, or generate client SDKs from live schemas.
+
 > **Complete tool guide →** [Creating tools](docs/guides/creating-tools.md) · [Tool adapters reference](docs/reference/tool-adapters.md)
 
 ---
@@ -539,7 +549,21 @@ const branching = createBranchingGraph({
 
 ### Visual flow builder
 
-The `/flows` page in the UI provides a drag-and-drop canvas. Connect Agent, Tool, Condition, State, and HITL nodes visually, then export the design as TypeScript that imports from `proto-agent-flows`.
+The `/flows` page in the UI provides a drag-and-drop canvas. Connect Agent, Tool, Condition, State, and HITL nodes visually. Use the **tool picker panel** in the sidebar to browse and insert any registered tool node. Export the design as TypeScript that imports from `proto-agent-flows`.
+
+### Flows API
+
+Flows are persisted server-side and managed via a REST API:
+
+```
+POST   /api/flows             → create a new flow
+GET    /api/flows             → list all flows
+GET    /api/flows/:id         → get a single flow
+PUT    /api/flows/:id         → update a flow
+DELETE /api/flows/:id         → delete a flow
+GET    /api/flows/:id/export  → export as a portable JSON document
+POST   /api/flows/import      → import from an exported document
+```
 
 ### HITL (human-in-the-loop)
 

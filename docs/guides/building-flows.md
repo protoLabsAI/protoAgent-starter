@@ -233,9 +233,61 @@ The app includes a visual flow builder at `/flows`. You can:
 
 1. Drag-drop five node types: **Agent**, **Tool**, **Condition**, **State**, **HITL** (human-in-the-loop)
 2. Connect nodes with edges
-3. Export the graph as TypeScript LangGraph code
+3. Pick tools from the **tool picker panel** — the sidebar lists all tools registered in `packages/tools`, fetched live from `GET /api/tools`
+4. Export the graph as TypeScript LangGraph code
 
 The exported code uses `proto-agent-flows` utilities, so it's immediately compatible with your project's tool registry and state management.
+
+## Flows API
+
+Flows created in the visual builder are persisted server-side as JSON files in the `.flows/` directory. The server exposes a full REST API to manage them programmatically:
+
+| Method   | Endpoint              | Description                                  |
+| -------- | --------------------- | -------------------------------------------- |
+| `POST`   | `/api/flows`          | Create a new flow                            |
+| `GET`    | `/api/flows`          | List all saved flows                         |
+| `GET`    | `/api/flows/:id`      | Get a single flow by ID                      |
+| `PUT`    | `/api/flows/:id`      | Update an existing flow                      |
+| `DELETE` | `/api/flows/:id`      | Delete a flow                                |
+| `GET`    | `/api/flows/:id/export` | Export a flow as a self-contained JSON document |
+| `POST`   | `/api/flows/import`   | Import a flow from an exported JSON document |
+
+### Create a flow
+
+```typescript
+const flow = await fetch('/api/flows', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    name: 'Research pipeline',
+    nodes: [], // React Flow node array
+    edges: [], // React Flow edge array
+    metadata: { description: 'Multi-step research agent' },
+  }),
+}).then((r) => r.json());
+// { id: 'flow_abc123', name: 'Research pipeline', nodes: [], edges: [], ... }
+```
+
+### Export and import flows
+
+Export a flow to a portable JSON document (useful for version control or sharing):
+
+```typescript
+const exported = await fetch('/api/flows/flow_abc123/export').then((r) => r.json());
+// Self-contained JSON with schema version, metadata, nodes, and edges
+```
+
+Import a previously exported flow:
+
+```typescript
+const imported = await fetch('/api/flows/import', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(exported),
+}).then((r) => r.json());
+```
+
+Importing assigns a new ID to the flow, so the original is never overwritten.
 
 ## Running a flow from the server
 
