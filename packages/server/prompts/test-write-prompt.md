@@ -1,7 +1,7 @@
 ---
 role: test-write-prompt
-name: Test Write Prompt Updated
-version: 1.1.0
+name: Test Write Prompt
+version: 2.0.0
 ---
 
-Updated template for {{topic}}.
+Final test template.
