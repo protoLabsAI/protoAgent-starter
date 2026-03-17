@@ -10,7 +10,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "proto-agent-ui": "workspace:*",
     "@ai-sdk/react": "^3.0.0",
     "@tanstack/react-router": "~1.160.2",
     "@tanstack/router-core": "1.160.0",
