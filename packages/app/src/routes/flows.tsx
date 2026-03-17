@@ -23,6 +23,12 @@ import { FlowSidebar } from '../components/flow-builder/sidebar.js';
 import { generateLangGraphCode, graphToJson } from '../components/flow-builder/codegen.js';
 import type { FlowNodeData } from '../components/flow-builder/nodes.js';
 import { ASSISTANT_FLOW_NODES, ASSISTANT_FLOW_EDGES } from '../components/flow-builder/default-flows.js';
+import {
+  ExportFlowButton,
+  ImportFlowButton,
+  CopyAsJsonButton,
+} from '../components/flow-builder/import-export.js';
+import type { ImportWarning } from '../components/flow-builder/import-export.js';
 
 // ── Route definition ──────────────────────────────────────────────────────────
 
@@ -63,6 +69,7 @@ function FlowsPageInner() {
   const [edges, setEdges, onEdgesChange] = useEdgesState(initial.edges);
   const [selectedNode, setSelectedNode] = useState<Node<FlowNodeData> | null>(null);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saved' | 'loaded'>('idle');
+  const [importWarnings, setImportWarnings] = useState<ImportWarning[]>([]);
 
   // ── Save to localStorage ───────────────────────────────────────────────────
   const handleSave = useCallback(() => {
@@ -122,6 +129,21 @@ function FlowsPageInner() {
       setNodes((nds) => nds.filter((n) => n.id !== id));
       setEdges((eds) => eds.filter((e) => e.source !== id && e.target !== id));
       setSelectedNode(null);
+    },
+    [setNodes, setEdges],
+  );
+
+  // ── Handle imported flow ───────────────────────────────────────────────────
+  const handleImport = useCallback(
+    (importedNodes: Node<FlowNodeData>[], importedEdges: Edge[], warnings: ImportWarning[]) => {
+      setNodes(importedNodes);
+      setEdges(importedEdges);
+      setSelectedNode(null);
+      setImportWarnings(warnings);
+      // Auto-dismiss warnings after 8 seconds
+      if (warnings.length > 0) {
+        setTimeout(() => setImportWarnings([]), 8000);
+      }
     },
     [setNodes, setEdges],
   );
@@ -193,8 +215,67 @@ function FlowsPageInner() {
           <ToolbarButton onClick={handleExport} title="Export as graph.ts" primary>
             ⬇ Export .ts
           </ToolbarButton>
+
+          {/* Divider */}
+          <span
+            style={{ width: 1, height: 20, background: 'var(--border)', margin: '0 2px' }}
+          />
+
+          <ImportFlowButton onImport={handleImport} />
+          <ExportFlowButton nodes={nodes} edges={edges} flowName="flow" />
+          <CopyAsJsonButton nodes={nodes} edges={edges} />
         </div>
       </header>
+
+      {/* ── Import warnings banner ───────────────────────────────────────── */}
+      {importWarnings.length > 0 && (
+        <div
+          style={{
+            padding: '8px 16px',
+            background: 'rgba(251,191,36,0.1)',
+            borderBottom: '1px solid rgba(251,191,36,0.3)',
+            flexShrink: 0,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              color: '#d97706',
+              marginBottom: 4,
+            }}
+          >
+            ⚠ Import warnings — some references are missing on this instance:
+          </div>
+          <ul style={{ margin: 0, paddingLeft: 18 }}>
+            {importWarnings.map((w, i) => (
+              <li
+                key={i}
+                style={{ fontSize: 11, color: '#92400e', lineHeight: 1.5 }}
+              >
+                {w.message}
+              </li>
+            ))}
+          </ul>
+          <button
+            type="button"
+            onClick={() => setImportWarnings([])}
+            style={{
+              marginTop: 6,
+              padding: '2px 8px',
+              background: 'transparent',
+              border: '1px solid rgba(217,119,6,0.4)',
+              borderRadius: 4,
+              color: '#d97706',
+              cursor: 'pointer',
+              fontSize: 10,
+              fontWeight: 600,
+            }}
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {/* ── Body: canvas + sidebar ────────────────────────────────────────── */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
