@@ -12,13 +12,20 @@
     "test": "turbo run test",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
-    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\""
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": ["prettier --write", "eslint --fix"],
+    "*.{json,css,md}": ["prettier --write"]
   },
   "engines": {
     "node": ">=20"
   },
   "packageManager": "pnpm@10.18.2",
   "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
     "prettier": "^3.8.1",
     "turbo": "^2.8.17"
   }
