@@ -12,6 +12,8 @@ import { NODE_SPECS } from './nodes.js';
 import type { FlowNodeData, NodeKind } from './nodes.js';
 import { useTools } from '../../hooks/use-tools.js';
 import type { ApiTool } from '../../hooks/use-tools.js';
+import { usePrompts, useRoles } from '../../hooks/use-prompts.js';
+import type { ApiPrompt, ApiRole } from '../../hooks/use-prompts.js';
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
@@ -320,15 +322,18 @@ function Inspector({ node, onChange, onDelete }: InspectorProps) {
 
         {/* Kind-specific fields */}
         {data.kind === 'agent' && (
-          <Field label="Model ID">
-            <input
-              type="text"
-              value={data.model ?? ''}
-              onChange={(e) => onChange({ model: e.target.value })}
-              style={inputStyle}
-              placeholder="claude-3-5-haiku-20241022"
-            />
-          </Field>
+          <>
+            <Field label="Model ID">
+              <input
+                type="text"
+                value={data.model ?? ''}
+                onChange={(e) => onChange({ model: e.target.value })}
+                style={inputStyle}
+                placeholder="claude-3-5-haiku-20241022"
+              />
+            </Field>
+            <AgentInspectorFields data={data} onChange={onChange} />
+          </>
         )}
 
         {data.kind === 'tool' && (
@@ -380,6 +385,323 @@ function Inspector({ node, onChange, onDelete }: InspectorProps) {
         </button>
       </div>
     </>
+  );
+}
+
+// ── Agent inspector fields (prompt picker + role picker) ──────────────────────
+
+interface AgentInspectorFieldsProps {
+  data: FlowNodeData;
+  onChange: (patch: Partial<FlowNodeData>) => void;
+}
+
+function AgentInspectorFields({ data, onChange }: AgentInspectorFieldsProps) {
+  const { prompts, loading: promptsLoading } = usePrompts();
+  const { roles, loading: rolesLoading } = useRoles();
+  const [showPromptPicker, setShowPromptPicker] = useState(!data.promptRef);
+  const [showRolePicker, setShowRolePicker] = useState(false);
+
+  const selectedPrompt = prompts.find((p) => p.id === data.promptRef) ?? null;
+  const selectedRole = roles.find((r) => r.id === data.roleId) ?? null;
+
+  const handleSelectPrompt = (prompt: ApiPrompt) => {
+    onChange({ promptRef: prompt.id, promptName: prompt.name });
+    setShowPromptPicker(false);
+  };
+
+  const handleSelectRole = (role: ApiRole) => {
+    onChange({ roleId: role.id, roleName: role.name });
+    setShowRolePicker(false);
+  };
+
+  return (
+    <>
+      {/* Prompt picker */}
+      <Field label="System Prompt">
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          <div
+            style={{
+              ...inputStyle,
+              flex: 1,
+              color: data.promptName ? 'var(--foreground)' : 'var(--text-muted)',
+              fontStyle: data.promptName ? 'normal' : 'italic',
+            }}
+          >
+            {data.promptName ?? 'None selected'}
+          </div>
+          <button
+            type="button"
+            onClick={() => { setShowPromptPicker((v) => !v); setShowRolePicker(false); }}
+            title="Pick from registered prompts"
+            style={{
+              flexShrink: 0,
+              padding: '4px 8px',
+              background: 'var(--surface-2)',
+              border: '1px solid var(--border)',
+              borderRadius: 5,
+              color: 'var(--text-secondary)',
+              cursor: 'pointer',
+              fontSize: 11,
+              fontWeight: 600,
+            }}
+          >
+            Browse
+          </button>
+        </div>
+      </Field>
+
+      {/* Prompt picker dropdown */}
+      {showPromptPicker && (
+        <div
+          style={{
+            marginBottom: 10,
+            border: '1px solid var(--border)',
+            borderRadius: 7,
+            overflow: 'hidden',
+            maxHeight: 200,
+            overflowY: 'auto',
+          }}
+        >
+          {promptsLoading && (
+            <div style={{ padding: '8px 10px', fontSize: 11, color: 'var(--text-muted)', fontStyle: 'italic' }}>
+              Loading prompts…
+            </div>
+          )}
+          {!promptsLoading && prompts.length === 0 && (
+            <div style={{ padding: '8px 10px', fontSize: 11, color: 'var(--text-muted)', fontStyle: 'italic' }}>
+              No prompts registered
+            </div>
+          )}
+          {prompts.map((prompt) => (
+            <button
+              key={prompt.id}
+              type="button"
+              onClick={() => handleSelectPrompt(prompt)}
+              style={{
+                display: 'block',
+                width: '100%',
+                textAlign: 'left',
+                padding: '7px 10px',
+                background: prompt.id === data.promptRef ? 'rgba(59,130,246,0.12)' : 'transparent',
+                border: 'none',
+                borderBottom: '1px solid var(--border)',
+                cursor: 'pointer',
+                fontSize: 11,
+                color: 'var(--foreground)',
+              }}
+            >
+              <div style={{ fontWeight: 700, color: '#3b82f6', fontSize: 11 }}>
+                {prompt.name}
+              </div>
+              {prompt.description && (
+                <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 1 }}>
+                  {prompt.description}
+                </div>
+              )}
+              {prompt.variables && prompt.variables.length > 0 && (
+                <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2, fontStyle: 'italic' }}>
+                  Variables: {prompt.variables.join(', ')}
+                </div>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Template preview for selected prompt */}
+      {selectedPrompt && !showPromptPicker && (
+        <PromptTemplatePreview prompt={selectedPrompt} />
+      )}
+
+      {/* Role picker */}
+      <Field label="Role (shortcut)">
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          <div
+            style={{
+              ...inputStyle,
+              flex: 1,
+              color: data.roleName ? 'var(--foreground)' : 'var(--text-muted)',
+              fontStyle: data.roleName ? 'normal' : 'italic',
+            }}
+          >
+            {data.roleName ?? 'None selected'}
+          </div>
+          <button
+            type="button"
+            onClick={() => { setShowRolePicker((v) => !v); setShowPromptPicker(false); }}
+            title="Pick from available roles"
+            style={{
+              flexShrink: 0,
+              padding: '4px 8px',
+              background: 'var(--surface-2)',
+              border: '1px solid var(--border)',
+              borderRadius: 5,
+              color: 'var(--text-secondary)',
+              cursor: 'pointer',
+              fontSize: 11,
+              fontWeight: 600,
+            }}
+          >
+            Browse
+          </button>
+        </div>
+      </Field>
+
+      {/* Role picker dropdown */}
+      {showRolePicker && (
+        <div
+          style={{
+            marginBottom: 10,
+            border: '1px solid var(--border)',
+            borderRadius: 7,
+            overflow: 'hidden',
+            maxHeight: 200,
+            overflowY: 'auto',
+          }}
+        >
+          {rolesLoading && (
+            <div style={{ padding: '8px 10px', fontSize: 11, color: 'var(--text-muted)', fontStyle: 'italic' }}>
+              Loading roles…
+            </div>
+          )}
+          {!rolesLoading && roles.length === 0 && (
+            <div style={{ padding: '8px 10px', fontSize: 11, color: 'var(--text-muted)', fontStyle: 'italic' }}>
+              No roles available
+            </div>
+          )}
+          {roles.map((role) => (
+            <button
+              key={role.id}
+              type="button"
+              onClick={() => handleSelectRole(role)}
+              style={{
+                display: 'block',
+                width: '100%',
+                textAlign: 'left',
+                padding: '7px 10px',
+                background: role.id === data.roleId ? 'rgba(168,85,247,0.12)' : 'transparent',
+                border: 'none',
+                borderBottom: '1px solid var(--border)',
+                cursor: 'pointer',
+                fontSize: 11,
+                color: 'var(--foreground)',
+              }}
+            >
+              <div style={{ fontWeight: 700, color: '#a855f7', fontSize: 11 }}>
+                {role.name}
+              </div>
+              {role.description && (
+                <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 1 }}>
+                  {role.description}
+                </div>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Show selected role's system prompt */}
+      {selectedRole && !showRolePicker && selectedRole.systemPrompt && (
+        <div style={{ marginBottom: 10 }}>
+          <div
+            style={{
+              fontSize: 10,
+              fontWeight: 700,
+              color: 'var(--text-secondary)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.04em',
+              marginBottom: 4,
+            }}
+          >
+            Role System Prompt
+          </div>
+          <pre
+            style={{
+              margin: 0,
+              padding: '6px 8px',
+              background: 'var(--surface-2)',
+              border: '1px solid rgba(168,85,247,0.3)',
+              borderRadius: 5,
+              fontSize: 9,
+              color: 'var(--text-muted)',
+              fontFamily: 'var(--font-mono, monospace)',
+              overflowX: 'auto',
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-all',
+              maxHeight: 120,
+              overflowY: 'auto',
+            }}
+          >
+            {selectedRole.systemPrompt}
+          </pre>
+        </div>
+      )}
+    </>
+  );
+}
+
+// ── Prompt template preview ────────────────────────────────────────────────────
+
+function PromptTemplatePreview({ prompt }: { prompt: ApiPrompt }) {
+  return (
+    <div style={{ marginBottom: 10 }}>
+      {/* Variables badge row */}
+      {prompt.variables && prompt.variables.length > 0 && (
+        <div style={{ marginBottom: 6, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+          {prompt.variables.map((v) => (
+            <span
+              key={v}
+              style={{
+                display: 'inline-block',
+                padding: '1px 7px',
+                background: 'rgba(59,130,246,0.15)',
+                border: '1px solid rgba(59,130,246,0.3)',
+                borderRadius: 10,
+                fontSize: 10,
+                color: '#3b82f6',
+                fontWeight: 600,
+                fontFamily: 'var(--font-mono, monospace)',
+              }}
+            >
+              {`{{${v}}}`}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Template preview */}
+      <div
+        style={{
+          fontSize: 10,
+          fontWeight: 700,
+          color: 'var(--text-secondary)',
+          textTransform: 'uppercase',
+          letterSpacing: '0.04em',
+          marginBottom: 4,
+        }}
+      >
+        Template Preview
+      </div>
+      <pre
+        style={{
+          margin: 0,
+          padding: '6px 8px',
+          background: 'var(--surface-2)',
+          border: '1px solid rgba(59,130,246,0.3)',
+          borderRadius: 5,
+          fontSize: 9,
+          color: 'var(--text-muted)',
+          fontFamily: 'var(--font-mono, monospace)',
+          overflowX: 'auto',
+          whiteSpace: 'pre-wrap',
+          wordBreak: 'break-all',
+          maxHeight: 120,
+          overflowY: 'auto',
+        }}
+      >
+        {prompt.template}
+      </pre>
+    </div>
   );
 }
 
